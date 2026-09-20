@@ -29,7 +29,7 @@ main{flex:1;padding:8px 16px 96px}
 .hz{color:var(--sub);text-align:center;font-size:14px;font-variant-numeric:tabular-nums}
 .meter{position:relative;height:56px;margin:14px 0 4px}
 .meter .scale{position:absolute;left:0;right:0;top:26px;height:4px;background:var(--line);border-radius:2px}
-.meter .zone{position:absolute;top:22px;height:12px;left:calc(50% - 10%);width:20%;background:rgba(46,139,87,.18);border-radius:6px}
+.meter .zone{position:absolute;top:22px;height:12px;left:calc(50% - 2.5%);width:5%;background:rgba(46,139,87,.18);border-radius:6px}
 .meter .center{position:absolute;left:50%;top:14px;width:2px;height:28px;background:var(--ink);transform:translateX(-1px)}
 .meter .needle{position:absolute;top:4px;width:6px;height:48px;border-radius:3px;background:var(--far);left:50%;transform:translateX(-3px);transition:left .08s linear,background .15s}
 .meter .lab{position:absolute;top:40px;font-size:11px;color:var(--sub)}
@@ -91,13 +91,13 @@ nav button.on{color:var(--tab);font-weight:700}
     <div class="meter">
       <div class="scale"></div><div class="zone"></div><div class="center"></div>
       <div class="needle" id="f-needle" style="left:50%"></div>
-      <span class="lab l">低い</span><span class="lab c">ぴったり</span><span class="lab r">高い</span>
+      <span class="lab l">7半音 低い</span><span class="lab" style="left:25%;transform:translateX(-50%)">半音</span><span class="lab c">ぴったり</span><span class="lab" style="left:75%;transform:translateX(-50%)">半音</span><span class="lab r">7半音 高い</span>
     </div>
     <div class="lvl"><i></i></div><div class="lvl-txt small"></div>
     <div class="dir" id="f-dir">&nbsp;</div>
     <div class="cents" id="f-cents">&nbsp;</div>
     <div class="vis"><div class="tline" style="top:50%"></div><canvas class="trace" id="f-trace"></canvas></div>
-    <p class="hint">当てにいかなくて大丈夫。声を出したまま、ゆっくり上げたり下げたりして、針が緑になる場所を探します。1オクターブ上下でも合格です。</p>
+    <p class="hint">当てにいかなくて大丈夫。声を出したまま、ゆっくり上げたり下げたりして、針が真ん中の緑に来る場所を探します。針の幅は上下7半音ぶん。1オクターブ上下でも合格です。</p>
   </div>
   <div class="card">
     <div class="small">練習の設定</div>
@@ -125,12 +125,12 @@ nav button.on{color:var(--tab);font-weight:700}
     <div class="meter">
       <div class="scale"></div><div class="zone"></div><div class="center"></div>
       <div class="needle" id="p-needle" style="left:50%"></div>
-      <span class="lab l">−50</span><span class="lab c">0</span><span class="lab r">+50</span>
+      <span class="lab l">7半音 低い</span><span class="lab" style="left:25%;transform:translateX(-50%)">半音</span><span class="lab c">ぴったり</span><span class="lab" style="left:75%;transform:translateX(-50%)">半音</span><span class="lab r">7半音 高い</span>
     </div>
     <div class="cents" id="p-cents">&nbsp;</div>
     <div class="lvl"><i></i></div><div class="lvl-txt small"></div>
     <div class="row" style="margin-top:10px"><button class="btn" id="btn-tuner-mic">🎤 はかる</button></div>
-    <p class="hint">「ド4」は真ん中のド（261.6Hz）。ぴったりの幅は±10セント（半音の1/10）です。スマホのマイクでは数セントの揺れが常に出ます。</p>
+    <p class="hint">「ド4」は真ん中のド（261.6Hz）。針の真ん中が、いちばん近い音にぴったりの位置です（緑＝±10セント・半音の1/10）。スマホのマイクでは数セントの揺れが常に出ます。</p>
   </div>
 </section>
 
@@ -289,7 +289,9 @@ function stopTone() { if (toneNodes) { try { toneNodes.osc.stop(); toneNodes.vib
 
 /* ---------- 共通の見せ方 ---------- */
 function toast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 2600); }
-function setNeedle(el, cents) { el.style.left = (50 + clamp(cents, -50, 50)) + '%'; el.style.background = Math.abs(cents) <= CONFIG.okCents ? 'var(--ok)' : Math.abs(cents) <= CONFIG.nearCents ? 'var(--near)' : 'var(--far)'; }
+function centsToPct(c) { const a = Math.min(Math.abs(c), 700); const w = a <= 100 ? a / 100 * 25 : 25 + (a - 100) / 600 * 23; return 50 + Math.sign(c) * w; }  // ±100→±25%・±700→±48%
+const smooth = { f: null, p: null };
+function setNeedle(el, cents) { el.style.left = centsToPct(cents) + '%'; el.style.background = Math.abs(cents) <= CONFIG.okCents ? 'var(--ok)' : Math.abs(cents) <= CONFIG.nearCents ? 'var(--near)' : 'var(--far)'; }
 function cls(cents) { const a = Math.abs(cents); return a <= CONFIG.okCents ? 'ok' : a <= CONFIG.nearCents ? 'near' : 'far'; }
 
 /* ---------- 画面切替 ---------- */
@@ -336,22 +338,28 @@ document.getElementById('btn-find-mic').addEventListener('click', async () => {
 });
 function findTick(hz) {
   const dirEl = document.getElementById('f-dir'), cEl = document.getElementById('f-cents');
-  if (!hz) { dirEl.textContent = '声を出してみましょう'; dirEl.className = 'dir'; cEl.textContent = ' '; setNeedle(document.getElementById('f-needle'), 0); drawTrace(null); return; }
+  if (!hz) { smooth.f = null; dirEl.textContent = '声を出してみましょう'; dirEl.className = 'dir'; cEl.textContent = ' '; setNeedle(document.getElementById('f-needle'), 0); drawTrace(null); return; }
   const target = find.targets[find.idx];
   const mf = hzToMidiF(hz);
-  let diff = (mf - target) * 100;                     // セント差
-  const octs = Math.round(diff / 1200);               // オクターブ違いは合格扱い
-  const diffOct = diff - octs * 1200;
-  setNeedle(document.getElementById('f-needle'), diffOct);
-  const k = cls(diffOct);
+  let diff = (mf - target) * 100;                         // 目標（その音そのもの）とのセント差
+  let octs = 0;
+  const octDiff = diff - Math.round(diff / 1200) * 1200;  // オクターブ違いを畳んだ差
+  if (Math.abs(diff) > 600 && Math.abs(octDiff) <= 50) { octs = Math.round(diff / 1200); diff = octDiff; }  // ほぼ合っている時だけオクターブ違いを認める
+  smooth.f = smooth.f === null ? diff : smooth.f + (diff - smooth.f) * 0.35;   // 針をなめらかに
+  const shown = smooth.f;
+  setNeedle(document.getElementById('f-needle'), shown);
+  const k = cls(diff);
   dirEl.className = 'dir ' + k;
+  const semis = Math.round(Math.abs(diff) / 100);
+  const nowName = noteJP(Math.round(mf));
   if (k === 'ok') dirEl.textContent = 'ぴったり！ そのまま…';
-  else if (diffOct > 0) dirEl.textContent = (k === 'near' ? 'もう少しだけ、下げて ↓' : 'もっと下げて ↓');
-  else dirEl.textContent = (k === 'near' ? 'もう少しだけ、上げて ↑' : 'もっと上げて ↑');
-  cEl.textContent = `${diffOct > 0 ? '+' : ''}${diffOct.toFixed(0)} セント（いま ${noteJP(Math.round(mf))} ${noteEN(Math.round(mf))}）` + (octs !== 0 ? `　${Math.abs(octs)}オクターブ${octs > 0 ? '上' : '下'}` : '');
-  drawTrace(diffOct);
+  else if (k === 'near') dirEl.textContent = diff > 0 ? 'もう少しだけ、下げて ↓' : 'もう少しだけ、上げて ↑';
+  else if (semis === 0) dirEl.textContent = diff > 0 ? 'ほんの少し、下げて ↓' : 'ほんの少し、上げて ↑';
+  else dirEl.textContent = (diff > 0 ? `半音${semis}つ 高い → 下げて ↓` : `半音${semis}つ 低い → 上げて ↑`);
+  cEl.textContent = `いま ${nowName}${octs ? `（${Math.abs(octs)}オクターブ${octs > 0 ? '上' : '下'}で合っています）` : ''}　${diff > 0 ? '+' : ''}${diff.toFixed(0)}セント`;
+  drawTrace(shown);
   const now = performance.now();
-  if (k === 'ok') { if (!find.okSince) find.okSince = now; if (now - find.okSince >= CONFIG.holdMs) foundNote(target, diffOct, octs); }
+  if (k === 'ok') { if (!find.okSince) find.okSince = now; if (now - find.okSince >= CONFIG.holdMs) foundNote(target, diff, octs); }
   else find.okSince = 0;
 }
 function foundNote(target, cents, octs) {
@@ -376,7 +384,7 @@ function drawTrace(cents) {
   find.trace.push(cents); if (find.trace.length > 160) find.trace.shift();
   const g = cv.getContext('2d'); g.clearRect(0, 0, cv.width, cv.height); g.lineWidth = 4; g.strokeStyle = '#1F6F73'; g.lineJoin = 'round';
   let pen = false; g.beginPath();
-  find.trace.forEach((c, i) => { if (c === null || c === undefined) { pen = false; return; } const x = (i / 160) * cv.width, y = cv.height / 2 - clamp(c, -60, 60) / 60 * (cv.height / 2 - 6); if (!pen) { g.moveTo(x, y); pen = true; } else g.lineTo(x, y); });
+  find.trace.forEach((c, i) => { if (c === null || c === undefined) { pen = false; return; } const x = (i / 160) * cv.width, y = cv.height * (1 - centsToPct(c) / 100); if (!pen) { g.moveTo(x, y); pen = true; } else g.lineTo(x, y); });
   g.stroke();
 }
 
@@ -408,10 +416,11 @@ document.getElementById('btn-tuner-mic').addEventListener('click', async () => {
 });
 function tunerTick(hz) {
   const nEl = document.getElementById('p-name'), oEl = document.getElementById('p-oct'), hEl = document.getElementById('p-hz'), cEl = document.getElementById('p-cents');
-  if (!hz) { nEl.firstChild.textContent = '—'; oEl.textContent = ''; hEl.textContent = '声を出すと、いまの高さが出ます'; cEl.textContent = ' '; setNeedle(document.getElementById('p-needle'), 0); return; }
+  if (!hz) { smooth.p = null; nEl.firstChild.textContent = '—'; oEl.textContent = ''; hEl.textContent = '声を出すと、いまの高さが出ます'; cEl.textContent = ' '; setNeedle(document.getElementById('p-needle'), 0); return; }
   const mf = hzToMidiF(hz), m = Math.round(mf), cents = (mf - m) * 100;
+  smooth.p = smooth.p === null ? cents : smooth.p + (cents - smooth.p) * 0.35;
   nEl.firstChild.textContent = noteJP(m); oEl.textContent = noteEN(m); hEl.textContent = hz.toFixed(1) + ' Hz';
-  setNeedle(document.getElementById('p-needle'), cents);
+  setNeedle(document.getElementById('p-needle'), smooth.p);
   const k = cls(cents); cEl.innerHTML = `<span class="dir ${k}" style="font-size:15px">${cents > 0 ? '+' : ''}${cents.toFixed(0)} セント　${k === 'ok' ? 'ぴったり' : cents > 0 ? '高め' : '低め'}</span>`;
 }
 
