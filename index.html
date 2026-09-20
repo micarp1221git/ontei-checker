@@ -226,7 +226,7 @@ details{margin-top:8px}summary{color:var(--sub);font-size:14px;cursor:pointer}
    音程チェッカー v0.6（2026-09-21）— すごろく: 単音→音階→メロディ（みかさん朝の指摘）
    ピッチ検出は「声の育成日記」の framePitchACF（自己相関法）を流用。端末内で完結。
    ========================================================== */
-const CONFIG = { silenceRMS: 0.008, pitchMinHz: 60, pitchMaxHz: 1200, okCents: 30, nearCents: 60, holdMs: 800, a4: 440, replayMs: 5000, toneSec: 1.3 };
+const CONFIG = { silenceRMS: 0.0025, pitchMinHz: 60, pitchMaxHz: 1200, okCents: 30, nearCents: 60, holdMs: 800, a4: 440, replayMs: 5000, toneSec: 1.3 };
 const PC_JP = ['ド','ド♯','レ','レ♯','ミ','ファ','ファ♯','ソ','ソ♯','ラ','ラ♯','シ'];
 const NAMES_EN = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 const STAGES = { 1: { name: '単音', seq: [0, 0, 0], lead: 'ステージ1は「ド」だけ。同じ高さを3回とります。' }, 2: { name: '音階', seq: [0, 2, 4, 5, 7, 5, 4, 2, 0], lead: 'ドレミファソと上がって、ソファミレドと下ります。' }, 3: { name: 'メロディ', seq: null, lead: '選んだメロディを、1音ずつ。' } };
@@ -269,7 +269,7 @@ function ensureCtx() { if (!mic.ctx) mic.ctx = new (window.AudioContext || windo
 async function micStart() {
   const ctx = ensureCtx();
   if (mic.stream) { await ctx.resume().catch(() => {}); if (!mic.running) loop(); return true; }
-  try { mic.stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } }); }
+  try { mic.stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: true } }); }
   catch (e) { try { mic.stream = await navigator.mediaDevices.getUserMedia({ audio: true }); } catch (e2) { toast('マイクの使用が許可されていません。設定 → Safari → マイク で許可して、もう一度お試しください。'); return false; } }
   await ctx.resume().catch(() => {});
   const src = ctx.createMediaStreamSource(mic.stream);
@@ -332,18 +332,31 @@ function keyLabel() { return `いまの高さ: ${noteJP(store.startMidi)}${noteE
 
 document.getElementById('btn-voice').addEventListener('click', async () => {
   ensureCtx(); if (!(await micStart())) return;
-  const b = document.getElementById('btn-voice'); b.disabled = true; b.className = 'btn rec'; b.textContent = '🔴 録音中… 「あー」（3秒）';
-  document.getElementById('pa-err').textContent = ''; document.getElementById('pa-msg').textContent = ' ';
-  const hzs = []; const fn = hz => { if (hz) hzs.push(hz); }; onPitch(fn);
-  setTimeout(() => {
-    offPitch(fn); b.disabled = false;
-    if (hzs.length < 5) { b.className = 'btn'; b.textContent = '🎤 もう一度「あー」を3秒'; document.getElementById('pa-err').textContent = '声が拾えませんでした。スマホを口の近くにして、もう一度「あー」'; return; }
+  const b = document.getElementById('btn-voice'); b.disabled = true; b.className = 'btn rec'; b.textContent = '🔴 録音中… 「あー」';
+  const msg = document.getElementById('pa-msg'), err = document.getElementById('pa-err'); err.textContent = ''; msg.textContent = '声を出してください…';
+  /* 固定3秒ではなく「声が出ている時間」を数える: 1.5秒ぶん取れたら決める。最長8秒 */
+  const hzs = []; let heard = 0; const t0 = performance.now();
+  const fn = hz => {
+    if (hz) { hzs.push(hz); if (hzs.length % 10 === 0) msg.textContent = `聞こえています… ${noteJP(Math.round(hzToMidiF(hz)))}`; }
+    else if (mic.level > 0.0015) heard++;
+  };
+  onPitch(fn);
+  const tick = setInterval(() => {
+    const enough = hzs.length >= 90;                       // 約1.5秒ぶん（60fps）
+    const timeout = performance.now() - t0 > 8000;
+    if (!enough && !timeout) return;
+    clearInterval(tick); offPitch(fn); b.disabled = false;
+    if (hzs.length < 20) {
+      b.className = 'btn'; b.textContent = '🎤 もう一度「あー」';
+      err.textContent = heard > 60 ? '声は聞こえていますが、高さが取れませんでした。「あー」と3秒のばしてください' : '声が拾えませんでした。スマホを口の近くにして、「あー」とのばしてください';
+      msg.textContent = ' '; return;
+    }
     const s = hzs.slice().sort((a, b) => a - b); const med = s[Math.floor(s.length / 2)]; const m = Math.round(hzToMidiF(med));
     store.startMidi = nearestC(m); save();
     b.className = 'btn ghost'; b.textContent = '🎤 取り直す';
-    document.getElementById('pa-msg').textContent = `いまの声は ${noteJP(m)}${noteEN(m)} くらい。ドレミは ${noteJP(store.startMidi)}${noteEN(store.startMidi)} から始めます`;
+    msg.textContent = `いまの声は ${noteJP(m)}${noteEN(m)} くらい。ドレミは ${noteJP(store.startMidi)}${noteEN(store.startMidi)} から始めます`;
     document.getElementById('pa-next').hidden = false;
-  }, 3000);
+  }, 100);
 });
 document.getElementById('btn-a-next').addEventListener('click', () => goStage(pr.stage || 1));
 
