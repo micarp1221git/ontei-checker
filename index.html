@@ -68,6 +68,8 @@ nav button.on{color:var(--tab);font-weight:700}
 .vis .tline{position:absolute;left:0;right:0;height:2px;background:var(--ok);opacity:.8}
 .vis .trace{position:absolute;top:0;left:0;display:block}
 .small{font-size:13px;color:var(--sub)}
+.lvl{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin:6px 0 2px}.lvl i{display:block;height:100%;width:0;background:var(--accent);transition:width .08s}
+.lvl-txt{min-height:18px;text-align:center}
 .foot{color:var(--sub);font-size:12px;text-align:center;margin-top:18px}
 </style>
 </head>
@@ -91,6 +93,7 @@ nav button.on{color:var(--tab);font-weight:700}
       <div class="needle" id="f-needle" style="left:50%"></div>
       <span class="lab l">低い</span><span class="lab c">ぴったり</span><span class="lab r">高い</span>
     </div>
+    <div class="lvl"><i></i></div><div class="lvl-txt small"></div>
     <div class="dir" id="f-dir">&nbsp;</div>
     <div class="cents" id="f-cents">&nbsp;</div>
     <div class="vis"><div class="tline" style="top:50%"></div><canvas class="trace" id="f-trace"></canvas></div>
@@ -125,6 +128,7 @@ nav button.on{color:var(--tab);font-weight:700}
       <span class="lab l">−50</span><span class="lab c">0</span><span class="lab r">+50</span>
     </div>
     <div class="cents" id="p-cents">&nbsp;</div>
+    <div class="lvl"><i></i></div><div class="lvl-txt small"></div>
     <div class="row" style="margin-top:10px"><button class="btn" id="btn-tuner-mic">🎤 はかる</button></div>
     <p class="hint">「ド4」は真ん中のド（261.6Hz）。ぴったりの幅は±10セント（半音の1/10）です。スマホのマイクでは数セントの揺れが常に出ます。</p>
   </div>
@@ -213,29 +217,54 @@ function framePitchACF(buf, rate) {
 }
 
 /* ---------- マイク ---------- */
-const mic = { ctx: null, analyser: null, stream: null, buf: null, raf: 0, listeners: new Set(), hist: [] };
+/* iPhoneのSafari対策: AudioContextは「ボタンを押した瞬間」に同期で作って resume する。
+   getUserMedia を待ったあとに作ると suspended のまま始まり、音が拾えない（9/20 みかさん実機で発生） */
+const mic = { ctx: null, analyser: null, stream: null, buf: null, raf: 0, listeners: new Set(), hist: [], level: 0, running: false };
+function ensureCtx() {
+  if (!mic.ctx) mic.ctx = new (window.AudioContext || window.webkitAudioContext)();
+  if (mic.ctx.state !== 'running') mic.ctx.resume().catch(() => {});
+  return mic.ctx;
+}
 async function micStart() {
-  if (mic.ctx) { if (mic.ctx.state === 'suspended') await mic.ctx.resume(); return true; }
+  const ctx = ensureCtx();                       // ← ユーザー操作の中で同期に
+  if (mic.stream) { await ctx.resume().catch(() => {}); if (!mic.running) loop(); return true; }
   try {
     mic.stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
-  } catch (e) { toast('マイクの使用が許可されていません。設定から許可して、もう一度お試しください。'); return false; }
-  mic.ctx = new (window.AudioContext || window.webkitAudioContext)();
-  const src = mic.ctx.createMediaStreamSource(mic.stream);
-  mic.analyser = mic.ctx.createAnalyser(); mic.analyser.fftSize = 4096; mic.analyser.smoothingTimeConstant = 0;
+  } catch (e) {
+    try { mic.stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }   // 制約を落として再挑戦
+    catch (e2) { toast('マイクの使用が許可されていません。設定 → Safari → マイク で許可して、もう一度お試しください。'); return false; }
+  }
+  await ctx.resume().catch(() => {});
+  const src = ctx.createMediaStreamSource(mic.stream);
+  mic.analyser = ctx.createAnalyser(); mic.analyser.fftSize = 4096; mic.analyser.smoothingTimeConstant = 0;
   src.connect(mic.analyser);
+  // iOS では出口につながっていないと止まることがあるので、無音のゲインで destination につなぐ
+  const mute = ctx.createGain(); mute.gain.value = 0; mic.analyser.connect(mute); mute.connect(ctx.destination);
   mic.buf = new Float32Array(mic.analyser.fftSize);
-  loop(); return true;
+  if (!mic.running) loop();
+  return true;
 }
 function loop() {
+  mic.running = true;
+  if (!mic.analyser) { mic.running = false; return; }
   mic.analyser.getFloatTimeDomainData(mic.buf);
+  let e = 0; for (let i = 0; i < mic.buf.length; i += 4) e += mic.buf[i] * mic.buf[i];
+  mic.level = Math.sqrt(e / (mic.buf.length / 4));
   const raw = framePitchACF(mic.buf, mic.ctx.sampleRate);
-  // 中央値で揺れを抑える（直近5フレーム・無音は捨てる）
   if (raw > 0) { mic.hist.push(raw); if (mic.hist.length > 5) mic.hist.shift(); } else { mic.hist.length = 0; }
   let hz = 0;
   if (mic.hist.length >= 3) { const s = [...mic.hist].sort((a, b) => a - b); hz = s[Math.floor(s.length / 2)]; }
   mic.listeners.forEach(fn => fn(hz));
+  updateLevel();
   mic.raf = requestAnimationFrame(loop);
 }
+function updateLevel() {
+  const pct = Math.min(100, Math.round(mic.level * 400));
+  document.querySelectorAll('.lvl i').forEach(el => el.style.width = pct + '%');
+  const st = mic.ctx ? mic.ctx.state : '-';
+  document.querySelectorAll('.lvl-txt').forEach(el => el.textContent = mic.stream ? (st === 'running' ? (pct < 2 ? 'マイクは動いています。声を出してみてください' : '入力あり') : '音の処理が止まっています。もう一度ボタンを押してください') : '');
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden && mic.ctx && mic.ctx.state !== 'running') mic.ctx.resume().catch(() => {}); });
 function onPitch(fn) { mic.listeners.add(fn); }
 function offPitch(fn) { mic.listeners.delete(fn); }
 
@@ -243,8 +272,7 @@ function offPitch(fn) { mic.listeners.delete(fn); }
 let toneNodes = null;
 function playTone(hz, sec) {
   stopTone();
-  const ctx = mic.ctx || (mic.ctx = new (window.AudioContext || window.webkitAudioContext)());
-  if (ctx.state === 'suspended') ctx.resume();
+  const ctx = ensureCtx();
   const t0 = ctx.currentTime;
   const osc = ctx.createOscillator(); osc.type = 'sawtooth'; osc.frequency.value = hz;
   const vib = ctx.createOscillator(); vib.frequency.value = 5.2; const vibG = ctx.createGain(); vibG.gain.value = hz * 0.006;
@@ -300,6 +328,7 @@ document.getElementById('btn-restart').addEventListener('click', () => { buildTa
 document.getElementById('btn-play').addEventListener('click', () => playTone(midiToHz(find.targets[find.idx]), 2.2));
 
 document.getElementById('btn-find-mic').addEventListener('click', async () => {
+  ensureCtx();
   if (find.active) { find.active = false; offPitch(findTick); document.getElementById('btn-find-mic').textContent = '🎤 声を出して探す'; return; }
   if (!(await micStart())) return;
   find.active = true; find.okSince = 0; onPitch(findTick);
@@ -353,6 +382,7 @@ function drawTrace(cents) {
 
 /* スタート音を決める（楽な高さで「あー」2.5秒） */
 document.getElementById('btn-start-note').addEventListener('click', async () => {
+  ensureCtx();
   if (!(await micStart())) return;
   const hzs = []; const fn = hz => { if (hz) hzs.push(hz); }; onPitch(fn);
   const b = document.getElementById('btn-start-note'); b.disabled = true; b.textContent = '楽な高さで「あー」…（2.5秒）';
@@ -371,6 +401,7 @@ document.getElementById('btn-start-note').addEventListener('click', async () => 
    ========================================================== */
 const tuner = { active: false };
 document.getElementById('btn-tuner-mic').addEventListener('click', async () => {
+  ensureCtx();
   const b = document.getElementById('btn-tuner-mic');
   if (tuner.active) { tuner.active = false; offPitch(tunerTick); b.textContent = '🎤 はかる'; return; }
   if (!(await micStart())) return; tuner.active = true; onPitch(tunerTick); b.textContent = '⏹ とめる';
@@ -400,6 +431,7 @@ function renderRange() {
   document.getElementById('r-log').innerHTML = log.length ? log.map(e => `${e.d}　${noteJP(e.low)}${noteEN(e.low)} 〜 ${noteJP(e.high)}${noteEN(e.high)}（${e.high - e.low}半音）`).join('<br>') : 'まだありません';
 }
 async function measureRange(kind) {
+  ensureCtx();
   if (!(await micStart())) return;
   const hzs = []; const fn = hz => { if (hz) hzs.push(hz); }; onPitch(fn);
   const b = document.getElementById(kind === 'low' ? 'btn-low' : 'btn-high'); b.disabled = true;
