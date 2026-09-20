@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>音程チェッカー</title>
+<meta name="description" content="声の高さを、ドレミと何セントずれているかで見せる音程チェッカー。すべらせて探す練習つき。ボイストレーナーみか監修。">
+<meta name="theme-color" content="#1F3A3D">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="音程チェッカー">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<style>
+:root{--bg:#F6F4EE;--ink:#1F2A2B;--sub:#6B7476;--line:#E1DDD3;--card:#FFFFFF;--accent:#1F6F73;--ok:#2E8B57;--near:#D99A1E;--far:#C0504D;--tab:#1F3A3D}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP",system-ui,sans-serif;font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
+button{font:inherit;cursor:pointer}
+.app{max-width:520px;margin:0 auto;min-height:100dvh;display:flex;flex-direction:column}
+header{padding:calc(env(safe-area-inset-top) + 14px) 20px 6px;display:flex;align-items:baseline;justify-content:space-between}
+header h1{font-size:18px;margin:0;letter-spacing:.02em}
+header .mode{font-size:12px;color:var(--sub)}
+main{flex:1;padding:8px 16px 96px}
+.screen{display:none}.screen.active{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 18px;margin:12px 0}
+.hint{color:var(--sub);font-size:14px;margin:6px 0 0}
+.big{font-size:64px;font-weight:700;line-height:1.1;letter-spacing:.02em;text-align:center;margin:8px 0 0}
+.big small{font-size:22px;font-weight:500;color:var(--sub);margin-left:4px}
+.hz{color:var(--sub);text-align:center;font-size:14px;font-variant-numeric:tabular-nums}
+.meter{position:relative;height:56px;margin:14px 0 4px}
+.meter .scale{position:absolute;left:0;right:0;top:26px;height:4px;background:var(--line);border-radius:2px}
+.meter .zone{position:absolute;top:22px;height:12px;left:calc(50% - 10%);width:20%;background:rgba(46,139,87,.18);border-radius:6px}
+.meter .center{position:absolute;left:50%;top:14px;width:2px;height:28px;background:var(--ink);transform:translateX(-1px)}
+.meter .needle{position:absolute;top:4px;width:6px;height:48px;border-radius:3px;background:var(--far);left:50%;transform:translateX(-3px);transition:left .08s linear,background .15s}
+.meter .lab{position:absolute;top:40px;font-size:11px;color:var(--sub)}
+.meter .lab.l{left:0}.meter .lab.r{right:0}.meter .lab.c{left:50%;transform:translateX(-50%)}
+.cents{text-align:center;font-size:15px;min-height:24px;font-variant-numeric:tabular-nums}
+.dir{text-align:center;font-size:24px;font-weight:700;min-height:40px;margin-top:6px}
+.dir.ok{color:var(--ok)}.dir.near{color:var(--near)}.dir.far{color:var(--far)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.btn{flex:1;border:0;border-radius:12px;padding:14px 12px;font-size:16px;font-weight:600;background:var(--accent);color:#fff}
+.btn.sec{background:#fff;color:var(--accent);border:1.5px solid var(--accent)}
+.btn.ghost{background:transparent;color:var(--sub);border:1px solid var(--line);font-weight:500}
+.btn:disabled{opacity:.45}
+.target{display:flex;align-items:baseline;justify-content:center;gap:10px;margin:2px 0 0}
+.target .name{font-size:52px;font-weight:700}
+.target .oct{font-size:18px;color:var(--sub)}
+.steps{display:flex;gap:6px;justify-content:center;margin:10px 0 2px}
+.steps span{width:38px;height:38px;border-radius:50%;border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center;font-weight:600;color:var(--sub);background:#fff}
+.steps span.cur{border-color:var(--accent);color:var(--accent)}
+.steps span.done{background:var(--ok);border-color:var(--ok);color:#fff}
+.seg{display:flex;border:1.5px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}
+.seg button{flex:1;border:0;background:transparent;padding:10px 6px;font-size:14px;color:var(--sub)}
+.seg button.on{background:var(--accent);color:#fff}
+.kv{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);font-size:15px}
+.kv:last-child{border-bottom:0}
+.kv b{font-size:18px}
+.msg{font-size:15px;margin:10px 0 0}
+.toast{position:fixed;left:50%;bottom:110px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:10px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s}
+.toast.show{opacity:1}
+nav{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);display:flex;padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;border:0;background:transparent;padding:10px 4px 8px;font-size:12px;color:var(--sub);display:flex;flex-direction:column;align-items:center;gap:2px}
+nav button .ic{font-size:20px;line-height:1}
+nav button.on{color:var(--tab);font-weight:700}
+.bar{height:10px;background:var(--line);border-radius:5px;position:relative;margin:10px 0 4px;overflow:hidden}
+.bar i{position:absolute;left:0;top:0;bottom:0;background:var(--accent);border-radius:5px;width:0;transition:width .1s}
+.vis{height:120px;position:relative;border-radius:10px;background:#F1EFE8;overflow:hidden;margin-top:10px}
+.vis .tline{position:absolute;left:0;right:0;height:2px;background:var(--ok);opacity:.8}
+.vis .trace{position:absolute;bottom:0;top:0;left:0;right:0}
+.small{font-size:13px;color:var(--sub)}
+.foot{color:var(--sub);font-size:12px;text-align:center;margin-top:18px}
+</style>
+</head>
+<body>
+<div class="app">
+<header><h1>音程チェッカー</h1><span class="mode" id="hdr-sub">ボイストレーナーみか監修</span></header>
+<main>
+
+<!-- ===== さがす（すべらせて探す練習） ===== -->
+<section id="screen-find" class="screen active">
+  <div class="card">
+    <div class="small" id="find-label">この音を、声で探します</div>
+    <div class="target"><span class="name" id="t-name">ド</span><span class="oct" id="t-oct">C4</span></div>
+    <div class="steps" id="steps"></div>
+    <div class="row" style="margin-top:12px">
+      <button class="btn sec" id="btn-play">🔈 お手本を鳴らす</button>
+      <button class="btn" id="btn-find-mic">🎤 声を出して探す</button>
+    </div>
+    <div class="meter">
+      <div class="scale"></div><div class="zone"></div><div class="center"></div>
+      <div class="needle" id="f-needle" style="left:50%"></div>
+      <span class="lab l">低い</span><span class="lab c">ぴったり</span><span class="lab r">高い</span>
+    </div>
+    <div class="dir" id="f-dir">&nbsp;</div>
+    <div class="cents" id="f-cents">&nbsp;</div>
+    <div class="vis"><div class="tline" style="top:50%"></div><canvas class="trace" id="f-trace"></canvas></div>
+    <p class="hint">当てにいかなくて大丈夫。声を出したまま、ゆっくり上げたり下げたりして、針が緑になる場所を探します。1オクターブ上下でも合格です。</p>
+  </div>
+  <div class="card">
+    <div class="small">練習の設定</div>
+    <div class="row" style="margin-top:8px">
+      <div class="seg" style="flex:1" id="seg-dir"><button data-v="up" class="on">上り</button><button data-v="down">下り</button></div>
+      <div class="seg" style="flex:1" id="seg-len"><button data-v="1" class="on">1音</button><button data-v="5">5音</button><button data-v="8">8音</button></div>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <button class="btn ghost" id="btn-start-note">スタート音を決める（楽な高さで「あー」）</button>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <button class="btn ghost" id="btn-lower">♭ 半音さげる</button>
+      <button class="btn ghost" id="btn-higher">♯ 半音あげる</button>
+      <button class="btn ghost" id="btn-restart">最初から</button>
+    </div>
+    <p class="hint" id="start-hint">いまのスタート音: <b id="start-name">ド C4</b>。男性はド3、女性はド4あたりが多いです。</p>
+  </div>
+</section>
+
+<!-- ===== ピッチ計 ===== -->
+<section id="screen-tuner" class="screen">
+  <div class="card">
+    <div class="big" id="p-name">—<small id="p-oct"></small></div>
+    <div class="hz" id="p-hz">声を出すと、いまの高さが出ます</div>
+    <div class="meter">
+      <div class="scale"></div><div class="zone"></div><div class="center"></div>
+      <div class="needle" id="p-needle" style="left:50%"></div>
+      <span class="lab l">−50</span><span class="lab c">0</span><span class="lab r">+50</span>
+    </div>
+    <div class="cents" id="p-cents">&nbsp;</div>
+    <div class="row" style="margin-top:10px"><button class="btn" id="btn-tuner-mic">🎤 はかる</button></div>
+    <p class="hint">「ド4」は真ん中のド（261.6Hz）。ぴったりの幅は±10セント（半音の1/10）です。スマホのマイクでは数セントの揺れが常に出ます。</p>
+  </div>
+</section>
+
+<!-- ===== 音域 ===== -->
+<section id="screen-range" class="screen">
+  <div class="card">
+    <div class="small">いちばん低い声と、いちばん高い声を、3秒ずつ</div>
+    <div class="kv"><span>いちばん低い声</span><b id="r-low">—</b></div>
+    <div class="kv"><span>いちばん高い声</span><b id="r-high">—</b></div>
+    <div class="kv"><span>音域のひろさ</span><b id="r-span">—</b></div>
+    <div class="bar"><i id="r-bar"></i></div>
+    <div class="row" style="margin-top:10px">
+      <button class="btn sec" id="btn-low">🎤 低い声（3秒）</button>
+      <button class="btn sec" id="btn-high">🎤 高い声（3秒）</button>
+    </div>
+    <p class="msg" id="r-msg"></p>
+    <p class="hint">裏声でも地声でもOK。無理に出さず、出しやすい範囲で。記録はこの端末の中だけに残ります。</p>
+  </div>
+  <div class="card">
+    <div class="small">きろく</div>
+    <div id="r-log" class="small" style="margin-top:6px">まだありません</div>
+  </div>
+</section>
+
+<p class="foot">音声は端末の中だけで処理します。外部には送りません。</p>
+</main>
+
+<nav>
+  <button class="on" data-screen="screen-find"><span class="ic">🎯</span>さがす</button>
+  <button data-screen="screen-tuner"><span class="ic">📈</span>ピッチ計</button>
+  <button data-screen="screen-range"><span class="ic">📏</span>音域</button>
+</nav>
+<div class="toast" id="toast"></div>
+</div>
+
+<script>
+/* ==========================================================
+   音程チェッカー v0（2026-09-20）
+   ピッチ検出は「声の育成日記」の framePitchACF（自己相関法）を流用。
+   すべて端末内で完結。通信なし。
+   ========================================================== */
+const CONFIG = { silenceRMS: 0.008, pitchMinHz: 60, pitchMaxHz: 1200, okCents: 10, nearCents: 25, holdMs: 700, a4: 440 };
+const NAMES_JP = ['ド','ド♯','レ','レ♯','ミ','ファ','ファ♯','ソ','ソ♯','ラ','ラ♯','シ'];
+const NAMES_EN = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const MAJOR = [0,2,4,5,7,9,11,12];
+const KEY = 'ontei-checker-v0';
+let store = { startMidi: 60, range: null, rangeLog: [] };
+try { Object.assign(store, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) {}
+function save() { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) {} }
+
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+function hzToMidiF(hz) { return 69 + 12 * Math.log2(hz / CONFIG.a4); }
+function midiToHz(m) { return CONFIG.a4 * Math.pow(2, (m - 69) / 12); }
+function noteJP(m) { return NAMES_JP[((m % 12) + 12) % 12]; }
+function noteEN(m) { return NAMES_EN[((m % 12) + 12) % 12] + (Math.floor(m / 12) - 1); }
+
+/* ---------- ピッチ検出（自己相関法） ---------- */
+function framePitchACF(buf, rate) {
+  const N = buf.length;
+  let c0 = 0;
+  for (let i = 0; i < N; i++) c0 += buf[i] * buf[i];
+  if (Math.sqrt(c0 / N) < CONFIG.silenceRMS) return 0;
+  const minLag = Math.floor(rate / CONFIG.pitchMaxHz);
+  const maxLag = Math.min(Math.floor(rate / CONFIG.pitchMinHz), N - 2);
+  if (maxLag <= minLag) return 0;
+  const corr = new Float32Array(maxLag + 2);
+  for (let lag = minLag - 1; lag <= maxLag + 1; lag++) {
+    let c = 0;
+    for (let i = 0; i < N - lag; i++) c += buf[i] * buf[i + lag];
+    corr[lag] = c / (c0 * (N - lag) / N);
+  }
+  let bestCorr = 0;
+  for (let lag = minLag; lag <= maxLag; lag++) if (corr[lag] > bestCorr) bestCorr = corr[lag];
+  if (bestCorr < 0.5) return 0;
+  let lag0 = -1;
+  for (let lag = minLag; lag <= maxLag; lag++) {
+    if (corr[lag] >= bestCorr * 0.85 && corr[lag] >= corr[lag - 1] && corr[lag] >= corr[lag + 1]) { lag0 = lag; break; }
+  }
+  if (lag0 < 0) return 0;
+  const c1 = corr[lag0 - 1], c2 = corr[lag0], c3 = corr[lag0 + 1];
+  const denom = c1 - 2 * c2 + c3;
+  const shift = denom !== 0 ? 0.5 * (c1 - c3) / denom : 0;
+  return rate / (lag0 + clamp(shift, -1, 1));
+}
+
+/* ---------- マイク ---------- */
+const mic = { ctx: null, analyser: null, stream: null, buf: null, raf: 0, listeners: new Set(), hist: [] };
+async function micStart() {
+  if (mic.ctx) { if (mic.ctx.state === 'suspended') await mic.ctx.resume(); return true; }
+  try {
+    mic.stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
+  } catch (e) { toast('マイクの使用が許可されていません。設定から許可して、もう一度お試しください。'); return false; }
+  mic.ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const src = mic.ctx.createMediaStreamSource(mic.stream);
+  mic.analyser = mic.ctx.createAnalyser(); mic.analyser.fftSize = 4096; mic.analyser.smoothingTimeConstant = 0;
+  src.connect(mic.analyser);
+  mic.buf = new Float32Array(mic.analyser.fftSize);
+  loop(); return true;
+}
+function loop() {
+  mic.analyser.getFloatTimeDomainData(mic.buf);
+  const raw = framePitchACF(mic.buf, mic.ctx.sampleRate);
+  // 中央値で揺れを抑える（直近5フレーム・無音は捨てる）
+  if (raw > 0) { mic.hist.push(raw); if (mic.hist.length > 5) mic.hist.shift(); } else { mic.hist.length = 0; }
+  let hz = 0;
+  if (mic.hist.length >= 3) { const s = [...mic.hist].sort((a, b) => a - b); hz = s[Math.floor(s.length / 2)]; }
+  mic.listeners.forEach(fn => fn(hz));
+  mic.raf = requestAnimationFrame(loop);
+}
+function onPitch(fn) { mic.listeners.add(fn); }
+function offPitch(fn) { mic.listeners.delete(fn); }
+
+/* ---------- お手本の音（人の声に近い「うー」） ---------- */
+let toneNodes = null;
+function playTone(hz, sec) {
+  stopTone();
+  const ctx = mic.ctx || (mic.ctx = new (window.AudioContext || window.webkitAudioContext)());
+  if (ctx.state === 'suspended') ctx.resume();
+  const t0 = ctx.currentTime;
+  const osc = ctx.createOscillator(); osc.type = 'sawtooth'; osc.frequency.value = hz;
+  const vib = ctx.createOscillator(); vib.frequency.value = 5.2; const vibG = ctx.createGain(); vibG.gain.value = hz * 0.006;
+  vib.connect(vibG); vibG.connect(osc.frequency);
+  const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = Math.min(hz * 3.2, 2200); lp.Q.value = 0.9;
+  const f1 = ctx.createBiquadFilter(); f1.type = 'peaking'; f1.frequency.value = 350; f1.Q.value = 3; f1.gain.value = 8;   // 「う」の第1フォルマント
+  const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.35, t0 + 0.12);
+  g.gain.setValueAtTime(0.35, t0 + sec - 0.15); g.gain.exponentialRampToValueAtTime(0.0001, t0 + sec);
+  osc.connect(lp); lp.connect(f1); f1.connect(g); g.connect(ctx.destination);
+  osc.start(t0); vib.start(t0); osc.stop(t0 + sec); vib.stop(t0 + sec);
+  toneNodes = { osc, vib };
+}
+function stopTone() { if (toneNodes) { try { toneNodes.osc.stop(); toneNodes.vib.stop(); } catch (e) {} toneNodes = null; } }
+
+/* ---------- 共通の見せ方 ---------- */
+function toast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 2600); }
+function setNeedle(el, cents) { el.style.left = (50 + clamp(cents, -50, 50)) + '%'; el.style.background = Math.abs(cents) <= CONFIG.okCents ? 'var(--ok)' : Math.abs(cents) <= CONFIG.nearCents ? 'var(--near)' : 'var(--far)'; }
+function cls(cents) { const a = Math.abs(cents); return a <= CONFIG.okCents ? 'ok' : a <= CONFIG.nearCents ? 'near' : 'far'; }
+
+/* ---------- 画面切替 ---------- */
+document.querySelectorAll('nav button').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.screen)));
+function switchTab(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.toggle('active', s.id === id));
+  document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.screen === id));
+  stopTone();
+}
+
+/* ==========================================================
+   さがす（すべらせて探す）
+   ========================================================== */
+const find = { dir: 'up', len: 1, idx: 0, targets: [], results: [], okSince: 0, active: false, trace: [] };
+function buildTargets() {
+  const seq = MAJOR.slice(0, find.len === 1 ? 1 : find.len).map(d => store.startMidi + d);
+  find.targets = find.dir === 'up' ? seq : seq.slice().reverse().map(m => m); // 下りは上の音から降りる
+  if (find.dir === 'down' && find.len > 1) find.targets = seq.slice().reverse();
+  find.idx = 0; find.results = []; find.okSince = 0; find.trace = [];
+  renderFind();
+}
+function renderFind() {
+  const m = find.targets[find.idx];
+  document.getElementById('t-name').textContent = noteJP(m);
+  document.getElementById('t-oct').textContent = noteEN(m) + '・' + midiToHz(m).toFixed(1) + 'Hz';
+  const st = document.getElementById('steps'); st.innerHTML = '';
+  find.targets.forEach((t, i) => { const s = document.createElement('span'); s.textContent = noteJP(t); s.className = i < find.idx ? 'done' : i === find.idx ? 'cur' : ''; st.appendChild(s); });
+  document.getElementById('start-name').textContent = noteJP(store.startMidi) + ' ' + noteEN(store.startMidi);
+  document.getElementById('find-label').textContent = find.targets.length > 1 ? `${find.idx + 1}音目 / ${find.targets.length}音` : 'この音を、声で探します';
+}
+document.getElementById('seg-dir').addEventListener('click', e => { if (!e.target.dataset.v) return; find.dir = e.target.dataset.v; [...e.currentTarget.children].forEach(b => b.classList.toggle('on', b === e.target)); buildTargets(); });
+document.getElementById('seg-len').addEventListener('click', e => { if (!e.target.dataset.v) return; find.len = +e.target.dataset.v; [...e.currentTarget.children].forEach(b => b.classList.toggle('on', b === e.target)); buildTargets(); });
+document.getElementById('btn-lower').addEventListener('click', () => { store.startMidi = clamp(store.startMidi - 1, 36, 84); save(); buildTargets(); });
+document.getElementById('btn-higher').addEventListener('click', () => { store.startMidi = clamp(store.startMidi + 1, 36, 84); save(); buildTargets(); });
+document.getElementById('btn-restart').addEventListener('click', () => { buildTargets(); document.getElementById('f-dir').textContent = ' '; document.getElementById('f-cents').textContent = ' '; });
+document.getElementById('btn-play').addEventListener('click', () => playTone(midiToHz(find.targets[find.idx]), 2.2));
+
+document.getElementById('btn-find-mic').addEventListener('click', async () => {
+  if (find.active) { find.active = false; offPitch(findTick); document.getElementById('btn-find-mic').textContent = '🎤 声を出して探す'; return; }
+  if (!(await micStart())) return;
+  find.active = true; find.okSince = 0; onPitch(findTick);
+  document.getElementById('btn-find-mic').textContent = '⏹ とめる';
+});
+function findTick(hz) {
+  const dirEl = document.getElementById('f-dir'), cEl = document.getElementById('f-cents');
+  if (!hz) { dirEl.textContent = '声を出してみましょう'; dirEl.className = 'dir'; cEl.textContent = ' '; setNeedle(document.getElementById('f-needle'), 0); drawTrace(null); return; }
+  const target = find.targets[find.idx];
+  const mf = hzToMidiF(hz);
+  let diff = (mf - target) * 100;                     // セント差
+  const octs = Math.round(diff / 1200);               // オクターブ違いは合格扱い
+  const diffOct = diff - octs * 1200;
+  setNeedle(document.getElementById('f-needle'), diffOct);
+  const k = cls(diffOct);
+  dirEl.className = 'dir ' + k;
+  if (k === 'ok') dirEl.textContent = 'ぴったり！ そのまま…';
+  else if (diffOct > 0) dirEl.textContent = (k === 'near' ? 'もう少しだけ、下げて ↓' : 'もっと下げて ↓');
+  else dirEl.textContent = (k === 'near' ? 'もう少しだけ、上げて ↑' : 'もっと上げて ↑');
+  cEl.textContent = `${diffOct > 0 ? '+' : ''}${diffOct.toFixed(0)} セント（いま ${noteJP(Math.round(mf))} ${noteEN(Math.round(mf))}）` + (octs !== 0 ? `　${Math.abs(octs)}オクターブ${octs > 0 ? '上' : '下'}` : '');
+  drawTrace(diffOct);
+  const now = performance.now();
+  if (k === 'ok') { if (!find.okSince) find.okSince = now; if (now - find.okSince >= CONFIG.holdMs) foundNote(target, diffOct, octs); }
+  else find.okSince = 0;
+}
+function foundNote(target, cents, octs) {
+  find.okSince = 0; find.results.push({ m: target, cents });
+  const octMsg = octs ? `（${Math.abs(octs)}オクターブ${octs > 0 ? '上' : '下'}で合っています）` : '';
+  toast(`ここが「${noteJP(target)}」です ${octMsg}`);
+  if (find.idx < find.targets.length - 1) { find.idx++; renderFind(); playTone(midiToHz(find.targets[find.idx]), 1.4); }
+  else finishFind();
+}
+function finishFind() {
+  find.active = false; offPitch(findTick); document.getElementById('btn-find-mic').textContent = '🎤 声を出して探す';
+  const n = find.results.length, avg = find.results.reduce((a, r) => a + r.cents, 0) / n;
+  const dirEl = document.getElementById('f-dir'); dirEl.className = 'dir ok';
+  dirEl.textContent = n === 1 ? `見つかりました。ここが「${noteJP(find.results[0].m)}」` : `${n}音とも見つかりました`;
+  document.getElementById('f-cents').textContent = n > 1 ? `平均 ${avg > 0 ? '+' : ''}${avg.toFixed(0)} セント（${Math.abs(avg) <= 5 ? 'ど真ん中' : avg > 0 ? 'すこし高め' : 'すこし低め'}の傾向）` : '';
+  document.querySelectorAll('#steps span').forEach(s => s.className = 'done');
+}
+function drawTrace(cents) {
+  const cv = document.getElementById('f-trace'); const W = cv.clientWidth, H = cv.clientHeight;
+  if (cv.width !== W * 2) { cv.width = W * 2; cv.height = H * 2; }
+  find.trace.push(cents); if (find.trace.length > 160) find.trace.shift();
+  const g = cv.getContext('2d'); g.clearRect(0, 0, cv.width, cv.height); g.lineWidth = 4; g.strokeStyle = '#1F6F73'; g.lineJoin = 'round';
+  let pen = false; g.beginPath();
+  find.trace.forEach((c, i) => { if (c === null || c === undefined) { pen = false; return; } const x = (i / 160) * cv.width, y = cv.height / 2 - clamp(c, -60, 60) / 60 * (cv.height / 2 - 6); if (!pen) { g.moveTo(x, y); pen = true; } else g.lineTo(x, y); });
+  g.stroke();
+}
+
+/* スタート音を決める（楽な高さで「あー」2.5秒） */
+document.getElementById('btn-start-note').addEventListener('click', async () => {
+  if (!(await micStart())) return;
+  const hzs = []; const fn = hz => { if (hz) hzs.push(hz); }; onPitch(fn);
+  const b = document.getElementById('btn-start-note'); b.disabled = true; b.textContent = '楽な高さで「あー」…（2.5秒）';
+  setTimeout(() => {
+    offPitch(fn); b.disabled = false; b.textContent = 'スタート音を決める（楽な高さで「あー」）';
+    if (hzs.length < 10) { toast('声が拾えませんでした。もう一度どうぞ'); return; }
+    const s = hzs.slice().sort((a, b) => a - b); const med = s[Math.floor(s.length / 2)];
+    const m = Math.round(hzToMidiF(med));
+    store.startMidi = clamp(m - (m % 12 - 0 + 12) % 12 + (m % 12 >= 6 ? 12 : 0), 36, 84); // いちばん近い「ド」に丸める
+    save(); buildTargets(); toast(`スタート音を「${noteJP(store.startMidi)} ${noteEN(store.startMidi)}」にしました（いまの声: ${noteJP(m)} ${noteEN(m)}）`);
+  }, 2500);
+});
+
+/* ==========================================================
+   ピッチ計
+   ========================================================== */
+const tuner = { active: false };
+document.getElementById('btn-tuner-mic').addEventListener('click', async () => {
+  const b = document.getElementById('btn-tuner-mic');
+  if (tuner.active) { tuner.active = false; offPitch(tunerTick); b.textContent = '🎤 はかる'; return; }
+  if (!(await micStart())) return; tuner.active = true; onPitch(tunerTick); b.textContent = '⏹ とめる';
+});
+function tunerTick(hz) {
+  const nEl = document.getElementById('p-name'), oEl = document.getElementById('p-oct'), hEl = document.getElementById('p-hz'), cEl = document.getElementById('p-cents');
+  if (!hz) { nEl.firstChild.textContent = '—'; oEl.textContent = ''; hEl.textContent = '声を出すと、いまの高さが出ます'; cEl.textContent = ' '; setNeedle(document.getElementById('p-needle'), 0); return; }
+  const mf = hzToMidiF(hz), m = Math.round(mf), cents = (mf - m) * 100;
+  nEl.firstChild.textContent = noteJP(m); oEl.textContent = noteEN(m); hEl.textContent = hz.toFixed(1) + ' Hz';
+  setNeedle(document.getElementById('p-needle'), cents);
+  const k = cls(cents); cEl.innerHTML = `<span class="dir ${k}" style="font-size:15px">${cents > 0 ? '+' : ''}${cents.toFixed(0)} セント　${k === 'ok' ? 'ぴったり' : cents > 0 ? '高め' : '低め'}</span>`;
+}
+
+/* ==========================================================
+   音域
+   ========================================================== */
+function renderRange() {
+  const r = store.range || {};
+  document.getElementById('r-low').textContent = r.low ? `${noteJP(r.low)} ${noteEN(r.low)}` : '—';
+  document.getElementById('r-high').textContent = r.high ? `${noteJP(r.high)} ${noteEN(r.high)}` : '—';
+  if (r.low && r.high && r.high > r.low) {
+    const semis = r.high - r.low; const oct = Math.floor(semis / 12), rem = semis % 12;
+    document.getElementById('r-span').textContent = `${semis}半音（${oct}オクターブ${rem ? '＋' + rem : ''}）`;
+    document.getElementById('r-bar').style.width = clamp(semis / 36 * 100, 4, 100) + '%';
+  } else { document.getElementById('r-span').textContent = '—'; document.getElementById('r-bar').style.width = '0%'; }
+  const log = store.rangeLog.slice(-7).reverse();
+  document.getElementById('r-log').innerHTML = log.length ? log.map(e => `${e.d}　${noteJP(e.low)}${noteEN(e.low)} 〜 ${noteJP(e.high)}${noteEN(e.high)}（${e.high - e.low}半音）`).join('<br>') : 'まだありません';
+}
+async function measureRange(kind) {
+  if (!(await micStart())) return;
+  const hzs = []; const fn = hz => { if (hz) hzs.push(hz); }; onPitch(fn);
+  const b = document.getElementById(kind === 'low' ? 'btn-low' : 'btn-high'); b.disabled = true;
+  document.getElementById('r-msg').textContent = kind === 'low' ? 'いちばん低い声で「あー」…' : 'いちばん高い声で「あー」…';
+  setTimeout(() => {
+    offPitch(fn); b.disabled = false; document.getElementById('r-msg').textContent = '';
+    if (hzs.length < 10) { toast('声が拾えませんでした。もう一度どうぞ'); return; }
+    const s = hzs.slice().sort((a, b) => a - b);
+    // 端の外れ値を捨てて、低い声は下位10%・高い声は上位10%の代表値
+    const v = kind === 'low' ? s[Math.floor(s.length * 0.1)] : s[Math.floor(s.length * 0.9)];
+    const m = Math.round(hzToMidiF(v));
+    store.range = store.range || {}; store.range[kind] = m;
+    if (store.range.low && store.range.high) { const d = new Date(); const ds = `${d.getMonth() + 1}/${d.getDate()}`; const last = store.rangeLog[store.rangeLog.length - 1]; if (!last || last.d !== ds) store.rangeLog.push({ d: ds, low: store.range.low, high: store.range.high }); else Object.assign(last, { low: store.range.low, high: store.range.high }); }
+    save(); renderRange(); toast(`${kind === 'low' ? '低い声' : '高い声'}: ${noteJP(m)} ${noteEN(m)}（${v.toFixed(0)}Hz）`);
+  }, 3000);
+}
+document.getElementById('btn-low').addEventListener('click', () => measureRange('low'));
+document.getElementById('btn-high').addEventListener('click', () => measureRange('high'));
+
+/* ---------- 起動 ---------- */
+buildTargets(); renderRange();
+function isNativeApp() { return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()); }
+if ('serviceWorker' in navigator && !isNativeApp()) { navigator.serviceWorker.register('./sw.js').catch(() => {}); }
+window.__ontei = { framePitchACF, hzToMidiF, noteJP, noteEN, store }; // テスト用
+</script>
+</body>
+</html>

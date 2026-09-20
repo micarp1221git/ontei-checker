@@ -1,0 +1,15 @@
+{
+  "name": "音程チェッカー",
+  "short_name": "音程チェッカー",
+  "description": "声の高さを、ドレミと何セントずれているかで見せる音程チェッカー。すべらせて探す練習つき。ボイストレーナーみか監修。",
+  "start_url": "./index.html",
+  "id": "./",
+  "display": "standalone",
+  "background_color": "#F6F4EE",
+  "theme_color": "#1F3A3D",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ],
+  "categories": ["education", "music"]
+}
