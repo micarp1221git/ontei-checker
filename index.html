@@ -114,7 +114,8 @@ details{margin-top:8px}summary{color:var(--sub);font-size:14px;cursor:pointer}
     <div class="lvl"><i></i></div><div class="lvl-txt"></div>
     <div class="sub" id="pa-msg">&nbsp;</div>
     <div class="err" id="pa-err"></div>
-    <div class="row" id="pa-next" hidden><button class="btn" id="btn-a-next">つぎへ（ステージ1へ）</button></div>
+    <div class="row" id="pa-next" hidden><button class="btn" id="btn-a-next">つぎへ</button></div>
+    <div class="center" id="pa-redo" hidden style="margin-top:8px"><button class="btn ghost" id="btn-redo" style="flex:0 0 auto;padding:6px 14px">録り直す</button></div>
   </div>
 
   <div class="card" id="pb" hidden>
@@ -229,7 +230,7 @@ details{margin-top:8px}summary{color:var(--sub);font-size:14px;cursor:pointer}
 const CONFIG = { silenceRMS: 0.0025, pitchMinHz: 60, pitchMaxHz: 1200, okCents: 30, nearCents: 60, holdMs: 800, a4: 440, replayMs: 5000, toneSec: 1.3 };
 const PC_JP = ['ド','ド♯','レ','レ♯','ミ','ファ','ファ♯','ソ','ソ♯','ラ','ラ♯','シ'];
 const NAMES_EN = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
-const STAGES = { 1: { name: '単音', seq: [0, 0, 0], lead: 'ステージ1は「ド」だけ。同じ高さを3回とります。' }, 2: { name: '音階', seq: [0, 2, 4, 5, 7, 5, 4, 2, 0], lead: 'ドレミファソと上がって、ソファミレドと下ります。' }, 3: { name: 'メロディ', seq: null, lead: '選んだメロディを、1音ずつ。' } };
+const STAGES = { 1: { name: '単音', seq: [0], lead: 'ステージ1は「ド」1音。聞こえた高さを、声でとります。' }, 2: { name: '音階', seq: [0, 2, 4, 5, 7, 5, 4, 2, 0], lead: 'ドレミファソと上がって、ソファミレドと下ります。' }, 3: { name: 'メロディ', seq: null, lead: '選んだメロディを、1音ずつ。' } };
 const PAD = [[0,'ド'],[2,'レ'],[4,'ミ'],[5,'ファ'],[7,'ソ'],[9,'ラ'],[11,'シ'],[12,'ド↑']];
 const KEY = 'ontei-checker-v05';
 let store = { startMidi: null, tol: 30, range: null, rangeLog: [], stars: {}, melody: [] };
@@ -335,30 +336,32 @@ document.getElementById('btn-voice').addEventListener('click', async () => {
   const b = document.getElementById('btn-voice'); b.disabled = true; b.className = 'btn rec'; b.textContent = '🔴 録音中… 「あー」';
   const msg = document.getElementById('pa-msg'), err = document.getElementById('pa-err'); err.textContent = ''; msg.textContent = '声を出してください…';
   /* 固定3秒ではなく「声が出ている時間」を数える: 1.5秒ぶん取れたら決める。最長8秒 */
-  const hzs = []; let heard = 0; const t0 = performance.now();
+  const hzs = []; let heard = 0, voicedMs = 0, last = performance.now(); const t0 = last;
   const fn = hz => {
-    if (hz) { hzs.push(hz); if (hzs.length % 10 === 0) msg.textContent = `聞こえています… ${noteJP(Math.round(hzToMidiF(hz)))}`; }
-    else if (mic.level > 0.0015) heard++;
+    const now = performance.now(), dt = Math.min(now - last, 100); last = now;
+    if (hz) { hzs.push(hz); voicedMs += dt; if (hzs.length % 10 === 0) msg.textContent = `聞こえています… ${noteJP(Math.round(hzToMidiF(hz)))}`; }
+    else if (mic.level > 0.0015) heard += dt;
   };
   onPitch(fn);
   const tick = setInterval(() => {
-    const enough = hzs.length >= 90;                       // 約1.5秒ぶん（60fps）
+    const enough = voicedMs >= 1500;                       // 声が出ている時間で1.5秒ぶん
     const timeout = performance.now() - t0 > 8000;
     if (!enough && !timeout) return;
     clearInterval(tick); offPitch(fn); b.disabled = false;
-    if (hzs.length < 20) {
+    if (hzs.length < 12) {
       b.className = 'btn'; b.textContent = '🎤 もう一度「あー」';
-      err.textContent = heard > 60 ? '声は聞こえていますが、高さが取れませんでした。「あー」と3秒のばしてください' : '声が拾えませんでした。スマホを口の近くにして、「あー」とのばしてください';
+      err.textContent = heard > 1000 ? '声は聞こえていますが、高さが取れませんでした。「あー」と3秒のばしてください' : '声が拾えませんでした。スマホを口の近くにして、「あー」とのばしてください';
       msg.textContent = ' '; return;
     }
     const s = hzs.slice().sort((a, b) => a - b); const med = s[Math.floor(s.length / 2)]; const m = Math.round(hzToMidiF(med));
     store.startMidi = nearestC(m); save();
-    b.className = 'btn ghost'; b.textContent = '🎤 取り直す';
-    msg.textContent = `いまの声は ${noteJP(m)}${noteEN(m)} くらい。ドレミは ${noteJP(store.startMidi)}${noteEN(store.startMidi)} から始めます`;
+    b.className = 'btn'; b.textContent = '🎤 「あー」を3秒'; b.parentElement.hidden = true; document.getElementById('pa-redo').hidden = false;
+    msg.textContent = `録れました。いまの声は ${noteJP(m)}${noteEN(m)} くらい。ドレミは ${noteJP(store.startMidi)}${noteEN(store.startMidi)} から始めます`;
     document.getElementById('pa-next').hidden = false;
   }, 100);
 });
 document.getElementById('btn-a-next').addEventListener('click', () => goStage(pr.stage || 1));
+document.getElementById('btn-redo').addEventListener('click', () => { document.getElementById('pa-redo').hidden = true; document.getElementById('pa-next').hidden = true; const b = document.getElementById('btn-voice'); b.parentElement.hidden = false; document.getElementById('pa-msg').textContent = ' '; });
 
 /* ---------- ステージ（すごろく） ---------- */
 function renderStages() {
@@ -388,7 +391,7 @@ document.getElementById('btn-seq-go').addEventListener('click', () => { buildTar
 function renderB() {
   const n = document.getElementById('pb-notes'); n.innerHTML = ''; pr.targets.forEach(m => { const s = document.createElement('span'); s.textContent = noteJP(m); n.appendChild(s); });
   document.getElementById('pb-key').textContent = keyLabel();
-  document.getElementById('pb-step').textContent = stageLabel(); document.getElementById('pb-lead').textContent = STAGES[pr.stage].lead + ' まずは聞くだけ。';
+  document.getElementById('pb-step').textContent = stageLabel(); document.getElementById('pb-lead').textContent = STAGES[pr.stage].lead + ' まずは聞くだけ。'; document.getElementById('pb-title').textContent = pr.targets.length === 1 ? `「${noteJP(pr.targets[0])}」を、聞いてみましょう` : 'まず、聞いてみましょう';
   document.getElementById('btn-b-next').disabled = true; const bl = document.getElementById('btn-listen'); bl.disabled = false; bl.textContent = '🔈 聞く';
 }
 document.getElementById('btn-listen').addEventListener('click', () => {
@@ -414,7 +417,7 @@ function renderC() {
   const m = pr.targets[pr.idx];
   document.getElementById('pc-target').textContent = noteJP(m);
   document.getElementById('pc-tlab').textContent = noteJP(m);
-  document.getElementById('pc-title').textContent = pr.idx === 0 ? `${pr.targets.length}音中 1音目「${noteJP(m)}」。同じ高さで「あー」` : `${pr.targets.length}音中 ${pr.idx + 1}音目「${noteJP(m)}」`;
+  document.getElementById('pc-title').textContent = pr.targets.length === 1 ? `「${noteJP(m)}」と同じ高さで「あー」` : pr.idx === 0 ? `${pr.targets.length}音中 1音目「${noteJP(m)}」。同じ高さで「あー」` : `${pr.targets.length}音中 ${pr.idx + 1}音目「${noteJP(m)}」`;
   const n = document.getElementById('pc-notes'); n.innerHTML = ''; pr.targets.forEach((t, i) => { const s = document.createElement('span'); s.textContent = noteJP(t); s.className = i < pr.idx ? 'done' : i === pr.idx ? 'cur' : ''; n.appendChild(s); });
 }
 function cTick(hz) {
@@ -453,7 +456,7 @@ document.getElementById('btn-stop').addEventListener('click', () => { stopStage(
 document.getElementById('btn-again').addEventListener('click', () => { buildTargets(pr.degrees); startC(); });
 document.getElementById('btn-next-stage').addEventListener('click', () => goStage(pr.stage + 1));
 document.getElementById('btn-clear-stars').addEventListener('click', () => { store.stars = {}; save(); renderStages(); toast('星をリセットしました'); });
-document.getElementById('btn-reset').addEventListener('click', () => { stopStage(); store.startMidi = null; save(); document.getElementById('pa-next').hidden = true; document.getElementById('pa-msg').textContent = ' '; const b = document.getElementById('btn-voice'); b.className = 'btn'; b.textContent = '🎤 「あー」を3秒'; show('pa'); });
+document.getElementById('btn-reset').addEventListener('click', () => { stopStage(); store.startMidi = null; save(); document.getElementById('pa-next').hidden = true; document.getElementById('pa-msg').textContent = ' '; const b = document.getElementById('btn-voice'); b.className = 'btn'; b.textContent = '🎤 「あー」を3秒'; b.parentElement.hidden = false; document.getElementById('pa-redo').hidden = true; show('pa'); });
 document.getElementById('seg-tol').addEventListener('click', e => { if (!e.target.dataset.v) return; store.tol = +e.target.dataset.v; CONFIG.okCents = store.tol; save(); [...e.currentTarget.children].forEach(b => b.classList.toggle('on', b === e.target)); });
 if (store.tol === 10) { [...document.getElementById('seg-tol').children].forEach(b => b.classList.toggle('on', b.dataset.v === '10')); }
 
@@ -508,7 +511,7 @@ document.getElementById('btn-high').addEventListener('click', () => measureRange
 /* ---------- 起動 ---------- */
 renderRange();
 renderStages();
-if (store.startMidi) { document.getElementById('pa-msg').textContent = `前回: ドレミは ${noteJP(store.startMidi)}${noteEN(store.startMidi)} から`; document.getElementById('pa-next').hidden = false; document.getElementById('btn-a-next').textContent = '前回の高さで、ステージ1へ'; const b = document.getElementById('btn-voice'); b.className = 'btn ghost'; b.textContent = '🎤 取り直す'; }
+if (store.startMidi) { document.getElementById('pa-msg').textContent = `前回: ドレミは ${noteJP(store.startMidi)}${noteEN(store.startMidi)} から`; document.getElementById('pa-next').hidden = false; document.getElementById('btn-a-next').textContent = '前回の高さで、つぎへ'; document.getElementById('btn-voice').parentElement.hidden = true; document.getElementById('pa-redo').hidden = false; }
 function isNativeApp() { return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()); }
 if ('serviceWorker' in navigator && !isNativeApp()) { navigator.serviceWorker.register('./sw.js').catch(() => {}); }
 window.__ontei = { framePitchACF, hzToMidiF, noteJP, noteEN, store, pr, buildTargets, startC, show, goStage, STAGES };
