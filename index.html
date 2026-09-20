@@ -64,9 +64,9 @@ nav button .ic{font-size:20px;line-height:1}
 nav button.on{color:var(--tab);font-weight:700}
 .bar{height:10px;background:var(--line);border-radius:5px;position:relative;margin:10px 0 4px;overflow:hidden}
 .bar i{position:absolute;left:0;top:0;bottom:0;background:var(--accent);border-radius:5px;width:0;transition:width .1s}
-.vis{height:120px;position:relative;border-radius:10px;background:#F1EFE8;overflow:hidden;margin-top:10px}
+.vis{height:120px;position:relative;border-radius:10px;background:#E9E6DD;overflow:hidden;margin-top:10px}
 .vis .tline{position:absolute;left:0;right:0;height:2px;background:var(--ok);opacity:.8}
-.vis .trace{position:absolute;bottom:0;top:0;left:0;right:0}
+.vis .trace{position:absolute;top:0;left:0;display:block}
 .small{font-size:13px;color:var(--sub)}
 .foot{color:var(--sub);font-size:12px;text-align:center;margin-top:18px}
 </style>
@@ -341,8 +341,9 @@ function finishFind() {
   document.querySelectorAll('#steps span').forEach(s => s.className = 'done');
 }
 function drawTrace(cents) {
-  const cv = document.getElementById('f-trace'); const W = cv.clientWidth, H = cv.clientHeight;
-  if (cv.width !== W * 2) { cv.width = W * 2; cv.height = H * 2; }
+  const cv = document.getElementById('f-trace'); const box = cv.parentElement; const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const W = Math.round(box.clientWidth * dpr), H = Math.round(box.clientHeight * dpr);
+  if (W > 0 && (cv.width !== W || cv.height !== H)) { cv.width = W; cv.height = H; cv.style.width = box.clientWidth + 'px'; cv.style.height = box.clientHeight + 'px'; }
   find.trace.push(cents); if (find.trace.length > 160) find.trace.shift();
   const g = cv.getContext('2d'); g.clearRect(0, 0, cv.width, cv.height); g.lineWidth = 4; g.strokeStyle = '#1F6F73'; g.lineJoin = 'round';
   let pen = false; g.beginPath();
@@ -419,7 +420,7 @@ document.getElementById('btn-low').addEventListener('click', () => measureRange(
 document.getElementById('btn-high').addEventListener('click', () => measureRange('high'));
 
 /* ---------- 起動 ---------- */
-buildTargets(); renderRange();
+buildTargets(); renderRange(); drawTrace(null);
 function isNativeApp() { return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()); }
 if ('serviceWorker' in navigator && !isNativeApp()) { navigator.serviceWorker.register('./sw.js').catch(() => {}); }
 window.__ontei = { framePitchACF, hzToMidiF, noteJP, noteEN, store }; // テスト用
