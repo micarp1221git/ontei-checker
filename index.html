@@ -319,7 +319,8 @@ function wavUrl(buf) { const n = buf.length, d = new DataView(new ArrayBuffer(44
   const ch = buf.getChannelData(0); for (let i = 0; i < n; i++) { const v = Math.max(-1, Math.min(1, ch[i])); d.setInt16(44 + i * 2, v < 0 ? v * 32768 : v * 32767, true); }
   return URL.createObjectURL(new Blob([d.buffer], { type: 'audio/wav' })); }
 const SILENT_WAV = (() => { try { const n = 1600; return wavUrl({ length: n, sampleRate: 8000, getChannelData: () => new Float32Array(n) }); } catch (e) { return ''; } })();
-function unlockToneAudio() { if (toneUnlocked || !IOS || !SILENT_WAV) return; try { toneAudio.src = SILENT_WAV; const pr = toneAudio.play(); if (pr && pr.then) pr.then(() => { toneUnlocked = true; }).catch(() => {}); else toneUnlocked = true; } catch (e) {} }
+/* 9/21 7周目「最初の1回しか聞こえない」→ <audio>の src 差し替え再生は2回目から鳴らない。代わりに無音の <audio> をループで鳴らし続け（メディア再生中の扱いにする）、お手本は WebAudio で鳴らす（unmute.js と同じ手） */
+function unlockToneAudio() { if (toneUnlocked || !IOS || !SILENT_WAV) return; try { toneAudio.src = SILENT_WAV; toneAudio.loop = true; const pr = toneAudio.play(); if (pr && pr.then) pr.then(() => { toneUnlocked = true; }).catch(() => {}); else toneUnlocked = true; } catch (e) {} }
 function buildTone(oc, hz, sec) { const t0 = 0; const osc = oc.createOscillator(); osc.type = 'sawtooth'; osc.frequency.value = hz;
   const vib = oc.createOscillator(); vib.frequency.value = 5.2; const vibG = oc.createGain(); vibG.gain.value = hz * 0.006; vib.connect(vibG); vibG.connect(osc.frequency);
   const lp = oc.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = Math.min(hz * 3.2, 2200); lp.Q.value = 0.9;
@@ -332,7 +333,7 @@ async function playToneIOS(hz, sec) { const key = Math.round(hz) + ':' + sec; le
 function playTone(hz, sec, keepMic) {
   stopTone(); const ctx = ensureCtx(); const t0 = ctx.currentTime;
   if (!keepMic) pauseMicFor(sec * 1000 + 300);
-  if (IOS) { playToneIOS(hz, sec); mic.muteUntil = performance.now() + sec * 1000 + 250; const tl0 = document.getElementById('pc-tone'); tl0.classList.add('on'); setTimeout(() => tl0.classList.remove('on'), sec * 1000); return; }
+  if (IOS && !toneUnlocked) unlockToneAudio();   // お手本は WebAudio で鳴らす（無音ループが解錠を担う）
   const osc = ctx.createOscillator(); osc.type = 'sawtooth'; osc.frequency.value = hz;
   const vib = ctx.createOscillator(); vib.frequency.value = 5.2; const vibG = ctx.createGain(); vibG.gain.value = hz * 0.006; vib.connect(vibG); vibG.connect(osc.frequency);
   const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = Math.min(hz * 3.2, 2200); lp.Q.value = 0.9;
@@ -342,7 +343,7 @@ function playTone(hz, sec, keepMic) {
   toneNodes = { osc, vib }; mic.muteUntil = performance.now() + sec * 1000 + 250;
   const tl = document.getElementById('pc-tone'); tl.classList.add('on'); setTimeout(() => tl.classList.remove('on'), sec * 1000);
 }
-function stopTone() { if (toneNodes) { try { toneNodes.osc.stop(); toneNodes.vib.stop(); } catch (e) {} toneNodes = null; } try { if (IOS && !toneAudio.paused) toneAudio.pause(); } catch (e) {} }
+function stopTone() { if (toneNodes) { try { toneNodes.osc.stop(); toneNodes.vib.stop(); } catch (e) {} toneNodes = null; } }
 function playSeq(midis, gap) { pauseMicFor(midis.length * gap + 300); midis.forEach((m, i) => setTimeout(() => playTone(midiToHz(m), gap / 1000 * 0.92, true), i * gap)); return midis.length * gap; }
 
 /* ---------- 共通 ---------- */
