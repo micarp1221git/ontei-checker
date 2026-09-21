@@ -116,6 +116,7 @@ details{margin-top:8px}summary{color:var(--sub);font-size:14px;cursor:pointer}
     <div class="sub" id="pa-msg">&nbsp;</div>
     <div class="err" id="pa-err"></div>
     <div class="row" id="pa-next" hidden><button class="btn" id="btn-a-next">つぎへ</button></div>
+    <p id="ios-note" class="s" hidden style="margin-top:10px;font-size:13px;opacity:.8">iPhoneでは、お手本が鳴るたびに「マイクへのアクセス」の表示が出ます。エラーではありません（鳴らす間だけマイクを止めているためです）。</p>
     <div class="center" style="margin-top:8px"><button class="btn ghost" id="btn-soundtest" style="flex:0 0 auto;padding:6px 14px;font-size:13px">🔈 音が出るかテスト（マイクを使わずに鳴らす）</button></div>
     <div class="center" id="pa-redo" hidden style="margin-top:8px"><button class="btn ghost" id="btn-redo" style="flex:0 0 auto;padding:6px 14px">録り直す</button></div>
   </div>
@@ -306,6 +307,7 @@ document.addEventListener('visibilitychange', () => {
   if (mic.ctx && mic.ctx.state !== 'running') mic.ctx.resume().catch(() => {});
   if (mic.wasOn) { mic.wasOn = false; if (pr.active) micStart(); }
 });
+if (IOS) document.getElementById('ios-note').hidden = false;
 document.getElementById('btn-soundtest').addEventListener('click', () => { ensureCtx(); playTone(midiToHz(60), 1.3, true); toast('「うー」が1.3秒鳴ります。聞こえなければ、本体横のスイッチと音量を確認してください'); });
 function onPitch(fn) { mic.listeners.add(fn); } function offPitch(fn) { mic.listeners.delete(fn); }
 
@@ -318,7 +320,7 @@ let micResumeTimer = 0;
 function micPause() { if (!mic.stream) return false; try { mic.stream.getTracks().forEach(t => t.stop()); } catch (e) {} mic.stream = null; mic.analyser = null; mic.hist.length = 0; return true; }
 /* 9/21 9周目で確定: マイクを使っていない時は鳴る（音量ボタンにも追従）＝マイク同居で出力が消える。だから鳴らす間だけマイクを止める。
    iOSは開き直すたびに「マイクへのアクセス」の表示を出すので、自動の5秒ごと繰り返しはiPhoneでは行わず、音は「ボタン」と「次の音に進んだ時」だけ */
-function pauseMicFor(ms) { if (!IOS) return; const was = micPause() || !!micResumeTimer; clearTimeout(micResumeTimer); micResumeTimer = 0; if (was) micResumeTimer = setTimeout(() => { micResumeTimer = 0; micStart(); }, ms); }
+function pauseMicFor(ms) { if (!IOS) return false; const now = micPause(); const was = now || !!micResumeTimer; clearTimeout(micResumeTimer); micResumeTimer = 0; if (was) micResumeTimer = setTimeout(() => { micResumeTimer = 0; micStart(); }, ms); return now; }
 /* iPhone: WebAudio の音はサイレントスイッチで消える・マイク使用中は小さくなる（9/21 みかさん「音聞こえない」）。
    → iPhoneでは音を <audio> 要素で鳴らす（メディア扱い＝サイレントでも鳴る）。音は OfflineAudioContext で同じ「うー」を作って WAV にする */
 const toneAudio = new Audio(); toneAudio.setAttribute('playsinline', ''); let toneUnlocked = false; const toneCache = new Map();
@@ -339,8 +341,9 @@ async function playToneIOS(hz, sec) { const key = Math.round(hz) + ':' + sec; le
   if (!url) { const sr = 22050, oc = new OfflineAudioContext(1, Math.ceil(sr * (sec + 0.05)), sr); buildTone(oc, hz, sec); url = wavUrl(await oc.startRendering()); toneCache.set(key, url); }
   toneAudio.pause(); toneAudio.src = url; toneAudio.currentTime = 0; toneAudio.play().catch(() => {}); }
 function playTone(hz, sec, keepMic) {
-  stopTone(); const ctx = ensureCtx(); const t0 = ctx.currentTime;
-  if (!keepMic) pauseMicFor(sec * 1000 + 300);
+  stopTone(); const ctx = ensureCtx();
+  /* 9/21 10周目: マイクを止めた直後に鳴らすと、iOSの出力経路がまだ通話側で無音のまま → 止めてから0.45秒待って鳴らす */
+  const delay = (!keepMic && pauseMicFor(sec * 1000 + 300 + 450)) ? 0.45 : 0; const t0 = ctx.currentTime + delay;
   if (IOS && !toneUnlocked) unlockToneAudio();   // お手本は WebAudio で鳴らす（無音ループが解錠を担う）
   const osc = ctx.createOscillator(); osc.type = 'sawtooth'; osc.frequency.value = hz;
   const vib = ctx.createOscillator(); vib.frequency.value = 5.2; const vibG = ctx.createGain(); vibG.gain.value = hz * 0.006; vib.connect(vibG); vibG.connect(osc.frequency);
@@ -348,8 +351,8 @@ function playTone(hz, sec, keepMic) {
   const f1 = ctx.createBiquadFilter(); f1.type = 'peaking'; f1.frequency.value = 350; f1.Q.value = 3; f1.gain.value = 8;
   const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.6, t0 + 0.1); g.gain.setValueAtTime(0.6, t0 + sec - 0.15); g.gain.exponentialRampToValueAtTime(0.0001, t0 + sec);
   osc.connect(lp); lp.connect(f1); f1.connect(g); g.connect(ctx.destination); osc.start(t0); vib.start(t0); osc.stop(t0 + sec); vib.stop(t0 + sec);
-  toneNodes = { osc, vib }; mic.muteUntil = performance.now() + sec * 1000 + 250;
-  const tl = document.getElementById('pc-tone'); tl.classList.add('on'); setTimeout(() => tl.classList.remove('on'), sec * 1000);
+  toneNodes = { osc, vib }; mic.muteUntil = performance.now() + (delay + sec) * 1000 + 250;
+  const tl = document.getElementById('pc-tone'); setTimeout(() => tl.classList.add('on'), delay * 1000); setTimeout(() => tl.classList.remove('on'), (delay + sec) * 1000);
 }
 function stopTone() { if (toneNodes) { try { toneNodes.osc.stop(); toneNodes.vib.stop(); } catch (e) {} toneNodes = null; } }
 function playSeq(midis, gap) { pauseMicFor(midis.length * gap + 300); midis.forEach((m, i) => setTimeout(() => playTone(midiToHz(m), gap / 1000 * 0.92, true), i * gap)); return midis.length * gap; }
