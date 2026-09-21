@@ -343,7 +343,8 @@ async function playToneIOS(hz, sec) { const key = Math.round(hz) + ':' + sec; le
 function playTone(hz, sec, keepMic) {
   stopTone(); const ctx = ensureCtx();
   /* 9/21 10周目: マイクを止めた直後に鳴らすと、iOSの出力経路がまだ通話側で無音のまま → 止めてから0.45秒待って鳴らす */
-  const delay = (!keepMic && pauseMicFor(sec * 1000 + 300 + 700)) ? 0.7 : 0;   // 13周目「聞こえたが小さめ」→ 経路の切替を待つ時間を 0.45→0.7秒に const t0 = ctx.currentTime + delay;
+  const delay = (!keepMic && pauseMicFor(sec * 1000 + 300 + 700)) ? 0.7 : 0;   // 13周目「聞こえたが小さめ」→ 経路の切替を待つ時間を 0.45→0.7秒に
+  const t0 = ctx.currentTime + delay;
   if (delay) { ctx.resume().catch(() => {}); setTimeout(() => { if (ctx.state !== 'running') ctx.resume().catch(() => {}); }, 200); }   // マイクを止めると AudioContext が止まることがある
   if (IOS && !toneUnlocked) unlockToneAudio();   // お手本は WebAudio で鳴らす（無音ループが解錠を担う）
   const osc = ctx.createOscillator(); osc.type = 'sawtooth'; osc.frequency.value = hz;
