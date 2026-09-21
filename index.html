@@ -310,7 +310,7 @@ let toneNodes = null;
 const IOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
 let micResumeTimer = 0;
 function micPause() { if (!mic.stream) return false; try { mic.stream.getTracks().forEach(t => t.stop()); } catch (e) {} mic.stream = null; mic.analyser = null; mic.hist.length = 0; return true; }
-function pauseMicFor(ms) { if (!IOS || store.simul) return; const was = micPause() || !!micResumeTimer; clearTimeout(micResumeTimer); micResumeTimer = 0; if (was) micResumeTimer = setTimeout(() => { micResumeTimer = 0; micStart(); }, ms); }
+function pauseMicFor(ms) { return; /* 9/21 6周目: マイクを止めると許可の表示が繰り返し出る→廃止 */ if (!IOS || store.simul) return; const was = micPause() || !!micResumeTimer; clearTimeout(micResumeTimer); micResumeTimer = 0; if (was) micResumeTimer = setTimeout(() => { micResumeTimer = 0; micStart(); }, ms); }
 /* iPhone: WebAudio の音はサイレントスイッチで消える・マイク使用中は小さくなる（9/21 みかさん「音聞こえない」）。
    → iPhoneでは音を <audio> 要素で鳴らす（メディア扱い＝サイレントでも鳴る）。音は OfflineAudioContext で同じ「うー」を作って WAV にする */
 const toneAudio = new Audio(); toneAudio.setAttribute('playsinline', ''); let toneUnlocked = false; const toneCache = new Map();
@@ -318,7 +318,8 @@ function wavUrl(buf) { const n = buf.length, d = new DataView(new ArrayBuffer(44
   w(0, 'RIFF'); d.setUint32(4, 36 + n * 2, true); w(8, 'WAVE'); w(12, 'fmt '); d.setUint32(16, 16, true); d.setUint16(20, 1, true); d.setUint16(22, 1, true); d.setUint32(24, buf.sampleRate, true); d.setUint32(28, buf.sampleRate * 2, true); d.setUint16(32, 2, true); d.setUint16(34, 16, true); w(36, 'data'); d.setUint32(40, n * 2, true);
   const ch = buf.getChannelData(0); for (let i = 0; i < n; i++) { const v = Math.max(-1, Math.min(1, ch[i])); d.setInt16(44 + i * 2, v < 0 ? v * 32768 : v * 32767, true); }
   return URL.createObjectURL(new Blob([d.buffer], { type: 'audio/wav' })); }
-function unlockToneAudio() { if (toneUnlocked || !IOS) return; try { const sr = 8000, oc = new OfflineAudioContext(1, sr * 0.2, sr); oc.startRendering().then(b => { toneAudio.src = wavUrl(b); toneAudio.play().then(() => { toneUnlocked = true; }).catch(() => {}); }); } catch (e) {} }
+const SILENT_WAV = (() => { try { const n = 1600; return wavUrl({ length: n, sampleRate: 8000, getChannelData: () => new Float32Array(n) }); } catch (e) { return ''; } })();
+function unlockToneAudio() { if (toneUnlocked || !IOS || !SILENT_WAV) return; try { toneAudio.src = SILENT_WAV; const pr = toneAudio.play(); if (pr && pr.then) pr.then(() => { toneUnlocked = true; }).catch(() => {}); else toneUnlocked = true; } catch (e) {} }
 function buildTone(oc, hz, sec) { const t0 = 0; const osc = oc.createOscillator(); osc.type = 'sawtooth'; osc.frequency.value = hz;
   const vib = oc.createOscillator(); vib.frequency.value = 5.2; const vibG = oc.createGain(); vibG.gain.value = hz * 0.006; vib.connect(vibG); vibG.connect(osc.frequency);
   const lp = oc.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = Math.min(hz * 3.2, 2200); lp.Q.value = 0.9;
@@ -480,7 +481,7 @@ function finishC() {
 }
 document.getElementById('btn-replay').addEventListener('click', () => { ensureCtx(); cueTarget(); });
 /* 9/21 みかさん「声を出すのと聞くのと同時に両立させたい」→ iPhoneで両立できるかは実機でしか分からないので、切り替えて試せるようにする */
-function renderSimul() { const b = document.getElementById('btn-simul'); if (!b) return; b.textContent = store.simul ? 'お手本の間のマイク: そのまま（既定）' : 'お手本の間のマイク: 止める（許可の表示が出ます）'; }
+function renderSimul() { const b = document.getElementById('btn-simul'); if (!b) return; b.hidden = true; return; b.textContent = store.simul ? 'お手本の間のマイク: そのまま（既定）' : 'お手本の間のマイク: 止める（許可の表示が出ます）'; }
 document.getElementById('btn-simul').addEventListener('click', () => { store.simul = !store.simul; save(); renderSimul(); toast(store.simul ? '同時モードにしました。お手本が小さく聞こえたら「切」に戻してください' : 'お手本の間はマイクを止めます'); });
 renderSimul();
 document.getElementById('btn-stop').addEventListener('click', () => { stopStage(); renderB(); show('pb'); });
