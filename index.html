@@ -159,6 +159,7 @@ details{margin-top:8px}summary{color:var(--sub);font-size:14px;cursor:pointer}
     <div class="sub" id="pc-now">&nbsp;</div>
     <div class="lvl"><i></i></div><div class="lvl-txt"></div>
     <div class="row" style="margin-top:10px"><button class="btn sec" id="btn-replay">🔈 もう一度お手本</button><button class="btn ghost" id="btn-stop">やめる</button></div>
+    <div class="center" style="margin-top:6px"><button class="btn ghost" id="btn-simul" style="flex:0 0 auto;padding:6px 14px;font-size:13px"></button></div>
   </div>
 
   <div class="card" id="pd" hidden>
@@ -234,7 +235,7 @@ const NAMES_EN = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 const STAGES = { 1: { name: '単音', seq: [0], lead: 'ステージ1は「ド」1音。聞こえた高さを、声でとります。' }, 2: { name: '音階', seq: [0, 2, 4, 5, 7, 5, 4, 2, 0], lead: 'ドレミファソと上がって、ソファミレドと下ります。' }, 3: { name: 'メロディ', seq: null, lead: '選んだメロディを、1音ずつ。' } };
 const PAD = [[0,'ド'],[2,'レ'],[4,'ミ'],[5,'ファ'],[7,'ソ'],[9,'ラ'],[11,'シ'],[12,'ド↑']];
 const KEY = 'ontei-checker-v05';
-let store = { startMidi: null, tol: 30, range: null, rangeLog: [], stars: {}, melody: [] };
+let store = { startMidi: null, tol: 30, range: null, rangeLog: [], stars: {}, melody: [], simul: false };
 try { Object.assign(store, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) {}
 function save() { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) {} }
 CONFIG.okCents = store.tol || 30;
@@ -294,7 +295,7 @@ function loop() {
   mic.listeners.forEach(fn => fn(hz)); updateLevel(); requestAnimationFrame(loop);
 }
 function updateLevel() {
-  const pct = Math.min(100, Math.round(mic.level * 400));
+  const pct = Math.min(100, Math.round(Math.sqrt(mic.level) * 260));   // 9/21 みかさん「声を出してもバーがあまり伸びない」→ 平方根で持ち上げる（ふつうの声≈0.05で約58%）
   document.querySelectorAll('.lvl i').forEach(el => el.style.width = pct + '%');
   const st = mic.ctx ? mic.ctx.state : '-';
   document.querySelectorAll('.lvl-txt').forEach(el => el.textContent = mic.stream ? (st === 'running' ? (pct < 2 ? 'マイクは動いています。声を出してみてください' : 'マイク: 入力あり') : '音の処理が止まっています。もう一度ボタンを押してください') : '');
@@ -309,7 +310,7 @@ let toneNodes = null;
 const IOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
 let micResumeTimer = 0;
 function micPause() { if (!mic.stream) return false; try { mic.stream.getTracks().forEach(t => t.stop()); } catch (e) {} mic.stream = null; mic.analyser = null; mic.hist.length = 0; return true; }
-function pauseMicFor(ms) { if (!IOS) return; const was = micPause() || !!micResumeTimer; clearTimeout(micResumeTimer); micResumeTimer = 0; if (was) micResumeTimer = setTimeout(() => { micResumeTimer = 0; micStart(); }, ms); }
+function pauseMicFor(ms) { if (!IOS || store.simul) return; const was = micPause() || !!micResumeTimer; clearTimeout(micResumeTimer); micResumeTimer = 0; if (was) micResumeTimer = setTimeout(() => { micResumeTimer = 0; micStart(); }, ms); }
 function playTone(hz, sec, keepMic) {
   stopTone(); const ctx = ensureCtx(); const t0 = ctx.currentTime;
   if (!keepMic) pauseMicFor(sec * 1000 + 300);
@@ -460,6 +461,10 @@ function finishC() {
   show('pd');
 }
 document.getElementById('btn-replay').addEventListener('click', () => { ensureCtx(); cueTarget(); });
+/* 9/21 みかさん「声を出すのと聞くのと同時に両立させたい」→ iPhoneで両立できるかは実機でしか分からないので、切り替えて試せるようにする */
+function renderSimul() { const b = document.getElementById('btn-simul'); if (!b) return; b.textContent = store.simul ? '同時モード: 入（お手本の間もマイクを止めない）' : '同時モード: 切（お手本の間はマイクを止める）'; }
+document.getElementById('btn-simul').addEventListener('click', () => { store.simul = !store.simul; save(); renderSimul(); toast(store.simul ? '同時モードにしました。お手本が小さく聞こえたら「切」に戻してください' : 'お手本の間はマイクを止めます'); });
+renderSimul();
 document.getElementById('btn-stop').addEventListener('click', () => { stopStage(); renderB(); show('pb'); });
 document.getElementById('btn-again').addEventListener('click', () => { buildTargets(pr.degrees); startC(); });
 document.getElementById('btn-next-stage').addEventListener('click', () => goStage(pr.stage + 1));
