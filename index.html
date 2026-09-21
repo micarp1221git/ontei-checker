@@ -304,19 +304,26 @@ function onPitch(fn) { mic.listeners.add(fn); } function offPitch(fn) { mic.list
 
 /* ---------- お手本の音（人の声に近い「うー」） ---------- */
 let toneNodes = null;
-function playTone(hz, sec) {
+/* iPhone Safari: マイクを開いたままだと出力が通話モードになり、お手本がほぼ聞こえない（9/21 みかさん「お手本の音が聞こえません」）。
+   鳴らす間だけマイクを止め、鳴り終わったら開き直す。開き直しは同じページ内なので再度の許可は出ない想定 */
+const IOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+let micResumeTimer = 0;
+function micPause() { if (!mic.stream) return false; try { mic.stream.getTracks().forEach(t => t.stop()); } catch (e) {} mic.stream = null; mic.analyser = null; mic.hist.length = 0; return true; }
+function pauseMicFor(ms) { if (!IOS) return; const was = micPause() || !!micResumeTimer; clearTimeout(micResumeTimer); micResumeTimer = 0; if (was) micResumeTimer = setTimeout(() => { micResumeTimer = 0; micStart(); }, ms); }
+function playTone(hz, sec, keepMic) {
   stopTone(); const ctx = ensureCtx(); const t0 = ctx.currentTime;
+  if (!keepMic) pauseMicFor(sec * 1000 + 300);
   const osc = ctx.createOscillator(); osc.type = 'sawtooth'; osc.frequency.value = hz;
   const vib = ctx.createOscillator(); vib.frequency.value = 5.2; const vibG = ctx.createGain(); vibG.gain.value = hz * 0.006; vib.connect(vibG); vibG.connect(osc.frequency);
   const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = Math.min(hz * 3.2, 2200); lp.Q.value = 0.9;
   const f1 = ctx.createBiquadFilter(); f1.type = 'peaking'; f1.frequency.value = 350; f1.Q.value = 3; f1.gain.value = 8;
-  const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.4, t0 + 0.1); g.gain.setValueAtTime(0.4, t0 + sec - 0.15); g.gain.exponentialRampToValueAtTime(0.0001, t0 + sec);
+  const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.6, t0 + 0.1); g.gain.setValueAtTime(0.6, t0 + sec - 0.15); g.gain.exponentialRampToValueAtTime(0.0001, t0 + sec);
   osc.connect(lp); lp.connect(f1); f1.connect(g); g.connect(ctx.destination); osc.start(t0); vib.start(t0); osc.stop(t0 + sec); vib.stop(t0 + sec);
   toneNodes = { osc, vib }; mic.muteUntil = performance.now() + sec * 1000 + 250;
   const tl = document.getElementById('pc-tone'); tl.classList.add('on'); setTimeout(() => tl.classList.remove('on'), sec * 1000);
 }
 function stopTone() { if (toneNodes) { try { toneNodes.osc.stop(); toneNodes.vib.stop(); } catch (e) {} toneNodes = null; } }
-function playSeq(midis, gap) { midis.forEach((m, i) => setTimeout(() => playTone(midiToHz(m), gap / 1000 * 0.92), i * gap)); return midis.length * gap; }
+function playSeq(midis, gap) { pauseMicFor(midis.length * gap + 300); midis.forEach((m, i) => setTimeout(() => playTone(midiToHz(m), gap / 1000 * 0.92, true), i * gap)); return midis.length * gap; }
 
 /* ---------- 共通 ---------- */
 function toast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 2200); }
