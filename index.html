@@ -231,6 +231,7 @@ details{margin-top:8px}summary{color:var(--sub);font-size:14px;cursor:pointer}
    音程チェッカー v0.6（2026-09-21）— すごろく: 単音→音階→メロディ（みかさん朝の指摘）
    ピッチ検出は「声の育成日記」の framePitchACF（自己相関法）を流用。端末内で完結。
    ========================================================== */
+const IOS = /iPhone|iPad|iPod/.test(navigator.userAgent);   // 9/21 12周目: 定義より前で使っていて読み込み時に落ち、全ボタンが死んでいた → 先頭へ
 const CONFIG = { silenceRMS: 0.0025, pitchMinHz: 60, pitchMaxHz: 1200, okCents: 30, nearCents: 60, holdMs: 800, a4: 440, replayMs: 5000, toneSec: 1.3 };
 const PC_JP = ['ド','ド♯','レ','レ♯','ミ','ファ','ファ♯','ソ','ソ♯','ラ','ラ♯','シ'];
 const NAMES_EN = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
@@ -315,7 +316,6 @@ function onPitch(fn) { mic.listeners.add(fn); } function offPitch(fn) { mic.list
 let toneNodes = null;
 /* iPhone Safari: マイクを開いたままだと出力が通話モードになり、お手本がほぼ聞こえない（9/21 みかさん「お手本の音が聞こえません」）。
    鳴らす間だけマイクを止め、鳴り終わったら開き直す。開き直しは同じページ内なので再度の許可は出ない想定 */
-const IOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
 let micResumeTimer = 0;
 function micPause() { if (!mic.stream) return false; try { mic.stream.getTracks().forEach(t => t.stop()); } catch (e) {} mic.stream = null; mic.analyser = null; mic.hist.length = 0; return true; }
 /* 9/21 9周目で確定: マイクを使っていない時は鳴る（音量ボタンにも追従）＝マイク同居で出力が消える。だから鳴らす間だけマイクを止める。
