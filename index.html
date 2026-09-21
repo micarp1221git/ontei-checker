@@ -38,16 +38,23 @@ h2{font-size:22px;margin:4px 0 6px;line-height:1.4}
 .center{text-align:center}
 .notes{display:flex;gap:8px;justify-content:center;margin:8px 0 4px}
 .notes span{width:44px;height:44px;border-radius:50%;border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--sub);background:#fff;font-size:17px}
+.notes span.two{font-size:12px;letter-spacing:-.04em}
 .notes span.cur{border-color:var(--accent);color:var(--accent);box-shadow:0 0 0 3px rgba(31,111,115,.15)}
+.result{list-style:none;padding:0;margin:6px 0}.result li{display:grid;grid-template-columns:2.6em 1fr 4.2em 3.4em;gap:0 8px;align-items:baseline;padding:5px 0;border-bottom:1px solid var(--line);font-size:15px}
+.result li.head{color:var(--sub);font-size:12px;border-bottom:0;padding-bottom:0}.result li b{font-size:17px}.result li .r{text-align:right;color:var(--sub);font-variant-numeric:tabular-nums}.result li .a.hit{color:var(--ok);font-weight:700}
 .notes span.done{background:var(--ok);border-color:var(--ok);color:#fff}
-.elev{position:relative;height:260px;margin:10px auto 6px;width:100%;max-width:340px}
-.elev .track{position:absolute;left:50%;top:10px;bottom:10px;width:10px;transform:translateX(-50%);background:var(--line);border-radius:5px}
-.elev .zone{position:absolute;left:50%;top:50%;width:64px;height:20px;transform:translate(-50%,-50%);background:rgba(46,139,87,.16);border-radius:10px}
-.elev .tline{position:absolute;left:18%;right:18%;top:50%;height:3px;background:var(--ok);transform:translateY(-50%);border-radius:2px}
-.elev .tlab{position:absolute;right:0;top:50%;transform:translateY(-50%);font-size:13px;color:var(--ok);font-weight:700}
-.elev .ball{position:absolute;left:50%;top:50%;width:34px;height:34px;border-radius:50%;background:var(--line);transform:translate(-50%,-50%);transition:top .09s linear,background .2s;box-shadow:0 2px 8px rgba(0,0,0,.18)}
-.elev .lab{position:absolute;left:0;font-size:12px;color:var(--sub)}
-.elev .lab.t{top:4px}.elev .lab.b{bottom:4px}
+.trace{position:relative;height:260px;margin:10px auto 6px;width:100%;max-width:360px}
+.trace canvas{width:100%;height:100%;display:block;border-radius:12px;background:#fff;border:1px solid var(--line)}
+.trace .lab{position:absolute;left:10px;font-size:12px;color:var(--sub)}
+.trace .lab.t{top:6px}.trace .lab.b{bottom:6px}
+.prog{height:8px;background:var(--line);border-radius:4px;overflow:hidden;margin:6px 0 8px}.prog i{display:block;height:100%;width:0;background:var(--ok);transition:width .3s}
+.stars{text-align:center;font-size:46px;letter-spacing:.08em;margin:2px 0 6px;color:#D9B21E;line-height:1.2}
+.stars span{display:inline-block;opacity:.22}.stars span.on{opacity:1;animation:pop .5s cubic-bezier(.2,1.6,.4,1) both}
+@keyframes pop{from{transform:scale(0)}to{transform:scale(1)}}
+.notes span.hit{animation:pop .4s cubic-bezier(.2,1.6,.4,1)}
+.streak{font-size:13px;color:var(--near);font-weight:700;margin-left:auto;margin-right:10px}
+.coach{background:#EEF5F3;border-radius:10px;padding:12px 14px;margin:10px 0 4px;font-size:15px}
+.big .abs{font-size:15px;font-weight:500;color:var(--sub);margin-left:8px}
 .word{text-align:center;font-size:26px;font-weight:700;min-height:44px;margin:4px 0 0}
 .word.ok{color:var(--ok)}.word.near{color:var(--near)}.word.far{color:var(--far)}
 .sub{text-align:center;color:var(--sub);font-size:14px;min-height:22px}
@@ -96,7 +103,7 @@ details{margin-top:8px}summary{color:var(--sub);font-size:14px;cursor:pointer}
 </head>
 <body>
 <div class="app">
-<header><h1>音程チェッカー</h1><span class="mode">ボイストレーナーみか監修</span></header>
+<header><h1>音程チェッカー</h1><span class="streak" id="streak" hidden></span><span class="mode">ボイストレーナーみか監修</span></header>
 <main>
 
 <!-- ===== れんしゅう（1本道） ===== -->
@@ -109,8 +116,8 @@ details{margin-top:8px}summary{color:var(--sub);font-size:14px;cursor:pointer}
 
   <div class="card" id="pa">
     <div class="step">1 / 3</div>
-    <h2>まず、楽な高さで「あー」</h2>
-    <p class="lead">ふだん話すくらいの高さで、3秒のばします。あなたの声に合うドレミの高さを決めます。</p>
+    <h2 id="pa-h2">まず、楽な高さで「あー」</h2>
+    <p class="lead" id="pa-lead">ふだん話すくらいの高さで、3秒のばします。あなたの声に合うドレミの高さを決めます。</p>
     <div class="row"><button class="btn" id="btn-voice">🎤 「あー」を3秒</button></div>
     <div class="lvl"><i></i></div><div class="lvl-txt"></div>
     <div class="sub" id="pa-msg">&nbsp;</div>
@@ -147,16 +154,16 @@ details{margin-top:8px}summary{color:var(--sub);font-size:14px;cursor:pointer}
 
   <div class="card" id="pc" hidden>
     <div class="step" id="pc-step">ステージ1 単音</div>
+    <div class="prog"><i id="pc-prog"></i></div>
     <h2 id="pc-title">聞こえた音と同じ高さで「あー」</h2>
     <div class="notes" id="pc-notes"></div>
     <div class="big" id="pc-target">ド</div>
     <div class="center small" id="pc-sub">お手本が鳴ったら、同じ高さで声をのばします。お手本は5秒ごとに鳴ります</div>
     <div class="row" style="margin:8px 0 6px"><button class="btn sec" id="btn-replay">🔈 もう一度お手本</button><button class="btn ghost" id="btn-stop">やめる</button></div>
-    <div class="elev">
+    <div class="trace">
       <div class="tone" id="pc-tone">🔈 お手本</div>
       <span class="lab t">高い</span><span class="lab b">低い</span>
-      <div class="track"></div><div class="zone"></div><div class="tline"></div><span class="tlab" id="pc-tlab">ド</span>
-      <div class="ball" id="pc-ball"></div>
+      <canvas id="pc-canvas"></canvas>
     </div>
     <div class="word" id="pc-word">&nbsp;</div>
     <div class="sub" id="pc-now">&nbsp;</div>
@@ -166,9 +173,11 @@ details{margin-top:8px}summary{color:var(--sub);font-size:14px;cursor:pointer}
 
   <div class="card" id="pd" hidden>
     <div class="step">クリア！</div>
-    <h2 id="pd-title">ステージ1 単音、クリア ★</h2>
+    <h2 id="pd-title">ステージ1 単音、クリア</h2>
+    <div class="stars" id="pd-stars"><span>★</span><span>★</span><span>★</span></div>
     <ul class="result" id="pd-list"></ul>
     <p class="lead" id="pd-msg"></p>
+    <div class="coach" id="pd-coach" hidden></div>
     <div class="row"><button class="btn" id="btn-next-stage">つぎのステージへ</button><button class="btn sec" id="btn-again">もう一回</button></div>
   </div>
 
@@ -228,7 +237,7 @@ details{margin-top:8px}summary{color:var(--sub);font-size:14px;cursor:pointer}
 
 <script>
 /* ==========================================================
-   音程チェッカー v0.6（2026-09-21）— すごろく: 単音→音階→メロディ（みかさん朝の指摘）
+   音程チェッカー v0.7（2026-09-21夜）— 軌跡・保持ゲージ・入り方の分析・星3段階・連続日数（みかさん「可視化から発生の改善へ」）。v0.6=すごろく 単音→音階→メロディ
    ピッチ検出は「声の育成日記」の framePitchACF（自己相関法）を流用。端末内で完結。
    ========================================================== */
 const IOS = /iPhone|iPad|iPod/.test(navigator.userAgent);   // 9/21 12周目: 定義より前で使っていて読み込み時に落ち、全ボタンが死んでいた → 先頭へ
@@ -238,10 +247,16 @@ const NAMES_EN = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 const STAGES = { 1: { name: '単音', seq: [0], lead: 'ステージ1は「ド」1音。聞こえた高さを、声でとります。' }, 2: { name: '音階', seq: [0, 2, 4, 5, 7, 5, 4, 2, 0], lead: 'ドレミファソと上がって、ソファミレドと下ります。' }, 3: { name: 'メロディ', seq: null, lead: '選んだメロディを、1音ずつ。' } };
 const PAD = [[0,'ド'],[2,'レ'],[4,'ミ'],[5,'ファ'],[7,'ソ'],[9,'ラ'],[11,'シ'],[12,'ド↑']];
 const KEY = 'ontei-checker-v05';
-let store = { startMidi: null, tol: 30, range: null, rangeLog: [], stars: {}, melody: [], simul: true };
+/* stars は段階ごとに 1〜3 の数（v0.6までは true/false。+true=1 なのでそのまま読める）。days は練習した日（連続日数用） */
+let store = { startMidi: null, tol: 30, range: null, rangeLog: [], stars: {}, melody: [], simul: true, days: [] };
 try { Object.assign(store, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) {}
+if (!Array.isArray(store.days)) store.days = [];
 function save() { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) {} }
 CONFIG.okCents = store.tol || 30;
+/* 9/21 表示は「移動ド」: ♭♯で高さをずらしても、子どもに見せる名前は常にドレミファソ（絶対音名は小さく添える）。
+   v0.6までは noteJP(絶対) で出していたので、ドをシに下げると「シ ド♯ レ♯ ミ ファ♯」と表示されていた */
+const DEG_JP = { 0: 'ド', 2: 'レ', 4: 'ミ', 5: 'ファ', 7: 'ソ', 9: 'ラ', 11: 'シ', 12: 'ド↑' };
+function degJP(d) { return DEG_JP[d] !== undefined ? DEG_JP[d] : noteJP(store.startMidi + d); }
 
 function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 function hzToMidiF(hz) { return 69 + 12 * Math.log2(hz / CONFIG.a4); }
@@ -340,11 +355,23 @@ function buildTone(oc, hz, sec) { const t0 = 0; const osc = oc.createOscillator(
 async function playToneIOS(hz, sec) { const key = Math.round(hz) + ':' + sec; let url = toneCache.get(key);
   if (!url) { const sr = 22050, oc = new OfflineAudioContext(1, Math.ceil(sr * (sec + 0.05)), sr); buildTone(oc, hz, sec); url = wavUrl(await oc.startRendering()); toneCache.set(key, url); }
   toneAudio.pause(); toneAudio.src = url; toneAudio.currentTime = 0; toneAudio.play().catch(() => {}); }
-function playTone(hz, sec, keepMic) {
+/* 短い「ピン」（合った時のチャイム・ファンファーレ用）。iPhoneはマイク使用中に鳴らせないので、お手本と同じ「マイクを止めた窓」の中で鳴らす */
+function blip(ctx, t, hz, len, vol, dest) { const o = ctx.createOscillator(); o.type = 'triangle'; o.frequency.value = hz; const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.015); g.gain.exponentialRampToValueAtTime(0.0001, t + len); o.connect(g); g.connect(dest); o.start(t); o.stop(t + len + 0.05); }
+function makeOut(ctx, loud) { const comp = ctx.createDynamicsCompressor(); comp.threshold.value = -18; comp.knee.value = 12; comp.ratio.value = 6; comp.attack.value = 0.003; comp.release.value = 0.2; comp.connect(ctx.destination); return comp; }
+function playFanfare() {
+  stopTone(); const ctx = ensureCtx(); let delay = 0;
+  clearTimeout(micResumeTimer); micResumeTimer = 0; if (micPause() && IOS) delay = 1.0;   // 結果画面ではマイクを使わないので止めたまま（次の「もう一回」で開き直す）
+  if (delay) { ctx.resume().catch(() => {}); setTimeout(() => { if (ctx.state !== 'running') ctx.resume().catch(() => {}); }, 200); }
+  const t0 = ctx.currentTime + delay, out = makeOut(ctx), vol = delay ? 1.6 : 0.6;
+  [[0, 523.25, 0.16], [0.14, 659.25, 0.16], [0.28, 783.99, 0.16], [0.42, 1046.5, 0.6]].forEach(([dt, hz, len]) => blip(ctx, t0 + dt, hz, len, vol, out));
+}
+function playTone(hz, sec, keepMic, chime) {
   stopTone(); const ctx = ensureCtx();
+  const pre = chime ? 0.4 : 0;   // 合った直後は「ピンポン」を先に鳴らしてからお手本（同じマイク停止の窓で鳴らす）
   /* 9/21 10周目: マイクを止めた直後に鳴らすと、iOSの出力経路がまだ通話側で無音のまま → 止めてから0.45秒待って鳴らす */
-  const delay = (!keepMic && pauseMicFor(sec * 1000 + 300 + 1000)) ? 1.0 : 0;   // 13周目「聞こえたが小さめ」→ 経路の切替を待つ時間を 0.45→0.7秒に
-  const t0 = ctx.currentTime + delay;
+  const delay = (!keepMic && pauseMicFor((pre + sec) * 1000 + 300 + 1000)) ? 1.0 : 0;   // 13周目「聞こえたが小さめ」→ 経路の切替を待つ時間を 0.45→0.7秒に
+  const tc = ctx.currentTime + delay, t0 = tc + pre;
+  if (chime) { const out = makeOut(ctx), v = delay ? 1.6 : 0.6; blip(ctx, tc, 880, 0.12, v, out); blip(ctx, tc + 0.13, 1318.5, 0.2, v, out); }
   if (delay) { ctx.resume().catch(() => {}); setTimeout(() => { if (ctx.state !== 'running') ctx.resume().catch(() => {}); }, 200); }   // マイクを止めると AudioContext が止まることがある
   if (IOS && !toneUnlocked) unlockToneAudio();   // お手本は WebAudio で鳴らす（無音ループが解錠を担う）
   const osc = ctx.createOscillator(); osc.type = 'sawtooth'; osc.frequency.value = hz;
@@ -355,8 +382,8 @@ function playTone(hz, sec, keepMic) {
   const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(vol, t0 + 0.1); g.gain.setValueAtTime(vol, t0 + sec - 0.15); g.gain.exponentialRampToValueAtTime(0.0001, t0 + sec);
   const comp = ctx.createDynamicsCompressor(); comp.threshold.value = -18; comp.knee.value = 12; comp.ratio.value = 6; comp.attack.value = 0.003; comp.release.value = 0.2;
   osc.connect(lp); lp.connect(f1); f1.connect(g); g.connect(comp); comp.connect(ctx.destination); osc.start(t0); vib.start(t0); osc.stop(t0 + sec); vib.stop(t0 + sec);
-  toneNodes = { osc, vib }; mic.muteUntil = performance.now() + (delay + sec) * 1000 + 250;
-  const tl = document.getElementById('pc-tone'); setTimeout(() => tl.classList.add('on'), delay * 1000); setTimeout(() => tl.classList.remove('on'), (delay + sec) * 1000);
+  toneNodes = { osc, vib }; mic.muteUntil = performance.now() + (delay + pre + sec) * 1000 + 250;
+  const tl = document.getElementById('pc-tone'); setTimeout(() => tl.classList.add('on'), (delay + pre) * 1000); setTimeout(() => tl.classList.remove('on'), (delay + pre + sec) * 1000);
 }
 function stopTone() { if (toneNodes) { try { toneNodes.osc.stop(); toneNodes.vib.stop(); } catch (e) {} toneNodes = null; } }
 function playSeq(midis, gap) { pauseMicFor(midis.length * gap + 300); midis.forEach((m, i) => setTimeout(() => playTone(midiToHz(m), gap / 1000 * 0.92, true), i * gap)); return midis.length * gap; }
@@ -407,12 +434,18 @@ document.getElementById('btn-voice').addEventListener('click', async () => {
   }, 100);
 });
 document.getElementById('btn-a-next').addEventListener('click', () => goStage(pr.stage || 1));
-document.getElementById('btn-redo').addEventListener('click', () => { document.getElementById('pa-redo').hidden = true; document.getElementById('pa-next').hidden = true; const b = document.getElementById('btn-voice'); b.parentElement.hidden = false; document.getElementById('pa-msg').textContent = ' '; });
+function restorePaText() { document.getElementById('pa-h2').textContent = 'まず、楽な高さで「あー」'; document.getElementById('pa-lead').textContent = 'ふだん話すくらいの高さで、3秒のばします。あなたの声に合うドレミの高さを決めます。'; }
+document.getElementById('btn-redo').addEventListener('click', () => { restorePaText(); document.getElementById('pa-redo').hidden = true; document.getElementById('pa-next').hidden = true; const b = document.getElementById('btn-voice'); b.parentElement.hidden = false; document.getElementById('pa-msg').textContent = ' '; });
 
 /* ---------- ステージ（すごろく） ---------- */
 function renderStages() {
-  document.querySelectorAll('#stages .stage').forEach(el => { const n = +el.dataset.stage; el.classList.toggle('cur', n === pr.stage); el.querySelector('.s').textContent = store.stars[n] ? '★' : ''; el.classList.toggle('locked', n > 1 && !store.stars[n - 1] && !store.stars[n]); });
+  document.querySelectorAll('#stages .stage').forEach(el => { const n = +el.dataset.stage; el.classList.toggle('cur', n === pr.stage); el.querySelector('.s').textContent = '★'.repeat(Math.min(3, +store.stars[n] || 0)); el.classList.toggle('locked', n > 1 && !store.stars[n - 1] && !store.stars[n]); });
 }
+/* ---------- 連続日数（ゲーミフィケーションの土台。クリアした日を貯める） ---------- */
+function dayKey(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
+function markDay() { const k = dayKey(new Date()); if (!store.days.includes(k)) { store.days.push(k); if (store.days.length > 400) store.days = store.days.slice(-400); save(); } renderStreak(); }
+function streakCount() { const set = new Set(store.days); const d = new Date(); if (!set.has(dayKey(d))) d.setDate(d.getDate() - 1); let n = 0; while (set.has(dayKey(d))) { n++; d.setDate(d.getDate() - 1); } return n; }
+function renderStreak() { const el = document.getElementById('streak'); const n = streakCount(); el.hidden = !n; el.textContent = `🔥 ${n}日連続`; }
 document.querySelectorAll('#stages .stage').forEach(el => el.addEventListener('click', () => { if (!store.startMidi) { toast('まず、楽な高さで「あー」から'); show('pa'); return; } goStage(+el.dataset.stage); }));
 function goStage(n) {
   pr.stage = n; renderStages(); stopStage();
@@ -435,9 +468,9 @@ document.getElementById('btn-seq-play').addEventListener('click', () => { ensure
 document.getElementById('btn-seq-go').addEventListener('click', () => { buildTargets(store.melody.slice()); renderB(); show('pb'); });
 
 function renderB() {
-  const n = document.getElementById('pb-notes'); n.innerHTML = ''; pr.targets.forEach(m => { const s = document.createElement('span'); s.textContent = noteJP(m); n.appendChild(s); });
+  const n = document.getElementById('pb-notes'); n.innerHTML = ''; pr.degrees.forEach(d => { const s = document.createElement('span'); s.textContent = degJP(d); s.className = degJP(d).length > 1 ? 'two' : ''; n.appendChild(s); });
   document.getElementById('pb-key').textContent = keyLabel();
-  document.getElementById('pb-step').textContent = stageLabel(); document.getElementById('pb-lead').textContent = STAGES[pr.stage].lead + ' まずは聞くだけ。'; document.getElementById('pb-title').textContent = pr.targets.length === 1 ? `「${noteJP(pr.targets[0])}」を、聞いてみましょう` : 'まず、聞いてみましょう';
+  document.getElementById('pb-step').textContent = stageLabel(); document.getElementById('pb-lead').textContent = STAGES[pr.stage].lead + ' まずは聞くだけ。'; document.getElementById('pb-title').textContent = pr.targets.length === 1 ? `「${degJP(pr.degrees[0])}」を、聞いてみましょう` : 'まず、聞いてみましょう';
   document.getElementById('btn-b-next').disabled = true; const bl = document.getElementById('btn-listen'); bl.disabled = false; bl.textContent = '🔈 聞く';
 }
 document.getElementById('btn-listen').addEventListener('click', () => {
@@ -455,46 +488,108 @@ document.getElementById('btn-b-next').addEventListener('click', () => startC());
 function buildTargets(degrees) { pr.degrees = degrees.slice(); pr.targets = degrees.map(d => store.startMidi + d); pr.idx = 0; pr.results = []; }
 async function startC() {
   ensureCtx(); if (!(await micStart())) return;
-  show('pc'); document.getElementById('pc-step').textContent = stageLabel(); pr.active = true; pr.okSince = 0; pr.smooth = null; renderC(); onPitch(cTick);
+  show('pc'); document.getElementById('pc-step').textContent = stageLabel(); pr.active = true; pr.okSince = 0; pr.smooth = null; tr.samples.length = 0; renderC(); onPitch(cTick);
   cueTarget(); clearInterval(pr.replayTimer); if (!IOS) pr.replayTimer = setInterval(() => { if (pr.active) cueTarget(); }, CONFIG.replayMs);
 }
-function cueTarget() { playTone(midiToHz(pr.targets[pr.idx]), CONFIG.toneSec); }
+function cueTarget(chime) { playTone(midiToHz(pr.targets[pr.idx]), CONFIG.toneSec, false, chime); }
 function renderC() {
-  const m = pr.targets[pr.idx];
-  document.getElementById('pc-target').textContent = noteJP(m);
-  document.getElementById('pc-tlab').textContent = noteJP(m);
-  document.getElementById('pc-title').textContent = pr.targets.length === 1 ? `「${noteJP(m)}」と同じ高さで「あー」` : pr.idx === 0 ? `${pr.targets.length}音中 1音目「${noteJP(m)}」。同じ高さで「あー」` : `${pr.targets.length}音中 ${pr.idx + 1}音目「${noteJP(m)}」`;
-  const n = document.getElementById('pc-notes'); n.innerHTML = ''; pr.targets.forEach((t, i) => { const s = document.createElement('span'); s.textContent = noteJP(t); s.className = i < pr.idx ? 'done' : i === pr.idx ? 'cur' : ''; n.appendChild(s); });
+  const m = pr.targets[pr.idx], d = pr.degrees[pr.idx], name = degJP(d);
+  const big = document.getElementById('pc-target'); big.textContent = name; const abs = document.createElement('span'); abs.className = 'abs'; abs.textContent = noteEN(m); big.appendChild(abs);
+  document.getElementById('pc-title').textContent = pr.targets.length === 1 ? `「${name}」と同じ高さで「あー」` : pr.idx === 0 ? `${pr.targets.length}音中 1音目「${name}」。同じ高さで「あー」` : `${pr.targets.length}音中 ${pr.idx + 1}音目「${name}」`;
+  document.getElementById('pc-prog').style.width = (pr.idx / pr.targets.length * 100) + '%';
+  const n = document.getElementById('pc-notes'); n.innerHTML = ''; pr.degrees.forEach((dd, i) => { const s = document.createElement('span'); s.textContent = degJP(dd); s.className = (i < pr.idx ? 'done' : i === pr.idx ? 'cur' : '') + (degJP(dd).length > 1 ? ' two' : ''); n.appendChild(s); });
+  tr.noteT0 = performance.now(); tr.first = []; tr.voicedT = 0;
 }
+
+/* ---------- 軌跡（9/21・みかさん「可視化から発生の改善につなげる」）----------
+   玉が「いま」を、左へ流れる線が「どう近づいたか」を見せる。緑の道に線が乗れば合格。
+   合った時は玉のまわりに輪がたまる（0.8秒保つ、が見える）。音ごとに入り方・揺れ・秒数を記録して結果画面で返す */
+const tr = { samples: [], ctx: null, w: 0, h: 0, noteT0: 0, first: [], voicedT: 0 };
+const TRACE_MS = 5000, LEAD = 0.82;
+function traceCtx() {
+  const c = document.getElementById('pc-canvas'); if (!c || !c.getContext) return null;
+  const dpr = window.devicePixelRatio || 1, w = c.clientWidth || 320, h = c.clientHeight || 260;
+  if (!tr.ctx || tr.w !== w || tr.h !== h) { c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); tr.ctx = c.getContext('2d'); if (!tr.ctx || !tr.ctx.setTransform) return null; tr.ctx.setTransform(dpr, 0, 0, dpr, 0, 0); tr.w = w; tr.h = h; }
+  return tr.ctx;
+}
+function yOf(c) { return tr.h * (0.5 - centsToPct(c) / 100); }
+function colorOf(c) { const a = Math.abs(c); return a <= CONFIG.okCents ? '#2E8B57' : a <= CONFIG.nearCents ? '#D99A1E' : '#C0504D'; }
+function drawTrace(nowT, cur, holdFrac) {
+  const ctx = traceCtx(); if (!ctx) return; const w = tr.w, h = tr.h; ctx.clearRect(0, 0, w, h);
+  const y1 = yOf(CONFIG.okCents), y2 = yOf(-CONFIG.okCents), n1 = yOf(CONFIG.nearCents), n2 = yOf(-CONFIG.nearCents);
+  ctx.fillStyle = 'rgba(217,154,30,.10)'; ctx.fillRect(0, n1, w, n2 - n1);
+  ctx.fillStyle = 'rgba(46,139,87,.20)'; ctx.fillRect(0, y1, w, y2 - y1);
+  ctx.strokeStyle = '#2E8B57'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(0, h / 2); ctx.lineTo(w, h / 2); ctx.stroke();
+  const x0 = w * LEAD, pxPerMs = x0 / TRACE_MS;
+  ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; let prev = null;
+  for (const s of tr.samples) { if (s.c === null) { prev = null; continue; } const x = x0 - (nowT - s.t) * pxPerMs; if (x < 0) { prev = null; continue; } const y = yOf(s.c); if (prev) { ctx.strokeStyle = colorOf(s.c); ctx.beginPath(); ctx.moveTo(prev.x, prev.y); ctx.lineTo(x, y); ctx.stroke(); } prev = { x, y }; }
+  if (cur === null) { ctx.fillStyle = '#E1DDD3'; ctx.beginPath(); ctx.arc(x0, h / 2, 15, 0, Math.PI * 2); ctx.fill(); return; }
+  const y = yOf(cur);
+  if (holdFrac > 0) { ctx.strokeStyle = '#2E8B57'; ctx.lineWidth = 6; ctx.beginPath(); ctx.arc(x0, y, 25, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * holdFrac); ctx.stroke(); }
+  ctx.fillStyle = colorOf(cur); ctx.beginPath(); ctx.arc(x0, y, 15, 0, Math.PI * 2); ctx.fill();
+}
+function pushSample(t, c) { tr.samples.push({ t, c }); while (tr.samples.length && t - tr.samples[0].t > TRACE_MS + 500) tr.samples.shift(); }
+
 function cTick(hz) {
-  const ball = document.getElementById('pc-ball'), w = document.getElementById('pc-word'), now = document.getElementById('pc-now');
-  if (!hz) { pr.smooth = null; w.className = 'word'; w.textContent = performance.now() < mic.muteUntil ? '🔈 お手本を聞いて…' : '声を出してみましょう'; now.textContent = ' '; ball.style.top = '50%'; ball.style.background = 'var(--line)'; pr.okSince = 0; return; }
+  const w = document.getElementById('pc-word'), now = document.getElementById('pc-now'), t = performance.now();
+  if (!hz) { pr.smooth = null; w.className = 'word'; w.textContent = t < mic.muteUntil ? '🔈 お手本を聞いて…' : '声を出してみましょう'; now.textContent = ' '; pr.okSince = 0; pushSample(t, null); drawTrace(t, null, 0); return; }
   const target = pr.targets[pr.idx]; const mf = hzToMidiF(hz);
   let diff = (mf - target) * 100, octs = 0;
   const octDiff = diff - Math.round(diff / 1200) * 1200;
   if (Math.abs(diff) > 600 && Math.abs(octDiff) <= CONFIG.okCents + 20) { octs = Math.round(diff / 1200); diff = octDiff; }
   pr.smooth = pr.smooth === null ? diff : pr.smooth + (diff - pr.smooth) * 0.35;
-  ball.style.top = (50 - centsToPct(pr.smooth)) + '%';
+  if (!tr.voicedT) tr.voicedT = t; if (tr.first.length < 6) tr.first.push(diff);
   const [k, word] = levelWord(diff); w.className = 'word ' + k; w.textContent = word;
-  ball.style.background = k === 'ok' ? 'var(--ok)' : k === 'near' ? 'var(--near)' : 'var(--far)';
   now.textContent = `いまの声: ${noteJP(Math.round(mf))}` + (octs ? `（${Math.abs(octs)}オクターブ${octs > 0 ? '上' : '下'}で合っています）` : '');
-  const t = performance.now();
-  if (k === 'ok') { if (!pr.okSince) pr.okSince = t; if (t - pr.okSince >= CONFIG.holdMs) gotNote(target, diff, octs); } else pr.okSince = 0;
+  if (k === 'ok') { if (!pr.okSince) pr.okSince = t; } else pr.okSince = 0;
+  pushSample(t, pr.smooth); drawTrace(t, pr.smooth, pr.okSince ? Math.min(1, (t - pr.okSince) / CONFIG.holdMs) : 0);
+  if (pr.okSince && t - pr.okSince >= CONFIG.holdMs) gotNote(target, octs);
 }
-function gotNote(target, cents, octs) {
-  pr.okSince = 0; pr.results.push({ m: target, cents }); toast(`${noteJP(target)}、できた！`);
-  if (pr.idx < pr.targets.length - 1) { pr.idx++; pr.smooth = null; renderC(); setTimeout(cueTarget, 600); }
-  else finishC();
+function noteStats(t) {
+  const hold = tr.samples.filter(s => s.c !== null && t - s.t <= CONFIG.holdMs).map(s => s.c);
+  const mean = hold.length ? hold.reduce((a, b) => a + b, 0) / hold.length : 0;
+  const wobble = hold.length > 1 ? Math.sqrt(hold.reduce((a, b) => a + (b - mean) * (b - mean), 0) / hold.length) : 0;
+  const f3 = tr.first.slice(0, 3); const f = f3.length ? f3.reduce((a, b) => a + b, 0) / f3.length : 0;   // 声の出だし3コマ（6コマの平均だと、すくい上げが薄まって「一発」になってしまう）
+  const approach = f <= -50 ? 'up' : f >= 50 ? 'down' : 'hit';   // up=下から上がって入った / down=上から降りて入った / hit=一発（出だしが±50セント以内）
+  return { cents: mean, wobble, approach, lockSec: Math.max(0, (t - tr.voicedT) / 1000) };
+}
+function gotNote(target, octs) {
+  const t = performance.now(), st = noteStats(t); pr.okSince = 0;
+  pr.results.push({ m: target, deg: pr.degrees[pr.idx], octs, ...st });
+  const cur = document.querySelector('#pc-notes span.cur'); if (cur) { cur.className = 'done hit' + (cur.classList.contains('two') ? ' two' : ''); }
+  toast(`${degJP(pr.degrees[pr.idx])}、できた！`);
+  if (pr.idx < pr.targets.length - 1) { pr.idx++; pr.smooth = null; setTimeout(() => { renderC(); cueTarget(true); }, 250); }
+  else { document.getElementById('pc-prog').style.width = '100%'; setTimeout(finishC, 350); }
+}
+const APPROACH_JP = { hit: '✨ 一発', up: '↗ 下から', down: '↘ 上から' };
+function starsFor(results) {
+  const avg = results.reduce((a, r) => a + Math.abs(r.cents), 0) / results.length;
+  const hit = results.filter(r => r.approach === 'hit').length / results.length;
+  return 1 + (avg <= 15 ? 1 : 0) + (hit >= 0.5 ? 1 : 0);   // ★=クリア ／ ★★=平均15セント以内 ／ ★★★=半分以上が一発
+}
+/* 結果のひとこと（下書き。文言はみかさんが直す前提） */
+function coachText(results) {
+  const n = results.length, up = results.filter(r => r.approach === 'up').length, down = results.filter(r => r.approach === 'down').length;
+  const wob = results.reduce((a, r) => a + r.wobble, 0) / n;
+  const cnt = k => n > 1 ? `（${n}音中${k}音）` : '';
+  if (up >= 1 && up * 2 >= n) return `下からすくって入っています${cnt(up)}。声を出す前に、頭の中でその音を先に鳴らしてから、最初からその高さで出してみましょう。`;
+  if (down >= 1 && down * 2 >= n) return `上から降りて入っています${cnt(down)}。声を出す前に、頭の中でその音を先に鳴らしてから、最初からその高さで出してみましょう。`;
+  if (wob > 20) return `合ったあとの揺れが大きめです（平均 ±${wob.toFixed(0)}セント）。合ったら、息を一定に流したまま、そのまま保つ練習をしてみましょう。`;
+  return '';
 }
 function finishC() {
-  pr.active = false; offPitch(cTick); clearInterval(pr.replayTimer); stopTone();
+  pr.active = false; offPitch(cTick); clearInterval(pr.replayTimer); playFanfare();
   const list = document.getElementById('pd-list'); list.innerHTML = '';
-  pr.results.forEach(r => { const li = document.createElement('li'); const a = Math.abs(r.cents); li.textContent = `${noteJP(r.m)}　${a <= 10 ? 'ど真ん中' : r.cents > 0 ? 'ほんの少し高め' : 'ほんの少し低め'}`; list.appendChild(li); });
+  const row = (cells, cls) => { const li = document.createElement('li'); if (cls) li.className = cls; cells.forEach(([txt, c]) => { const sp = document.createElement(c === 'b' ? 'b' : 'span'); if (c && c !== 'b') sp.className = c; sp.textContent = txt; li.appendChild(sp); }); list.appendChild(li); };
+  row([['音'], ['入り方'], ['揺れ', 'r'], ['秒', 'r']], 'head');
+  pr.results.forEach(r => row([[degJP(r.deg), 'b'], [APPROACH_JP[r.approach], 'a ' + r.approach], [`±${r.wobble.toFixed(0)}`, 'r'], [r.lockSec.toFixed(1), 'r']]));
   const avg = pr.results.reduce((a, r) => a + r.cents, 0) / pr.results.length;
-  store.stars[pr.stage] = true; save(); renderStages();
-  document.getElementById('pd-title').textContent = `${stageLabel()}、クリア ★`;
+  const stars = starsFor(pr.results); store.stars[pr.stage] = Math.max(+store.stars[pr.stage] || 0, stars); save(); renderStages(); markDay();
+  const sp = document.querySelectorAll('#pd-stars span'); sp.forEach((s, i) => { s.className = ''; void s.offsetWidth; if (i < stars) { s.className = 'on'; s.style.animationDelay = (0.15 + i * 0.25) + 's'; } });
+  document.getElementById('pd-title').textContent = `${stageLabel()}、クリア`;
   document.getElementById('btn-next-stage').hidden = pr.stage >= 3; document.getElementById('btn-next-stage').textContent = pr.stage < 3 ? `つぎへ: ステージ${pr.stage + 1} ${STAGES[pr.stage + 1].name}` : '';
   document.getElementById('pd-msg').textContent = Math.abs(avg) <= 10 ? '全部、真ん中で取れています。' : avg > 0 ? '全体に、ほんの少し高めに取る傾向があります。次は「少し低め」を意識してみてください。' : '全体に、ほんの少し低めに取る傾向があります。次は「少し高め」を意識してみてください。';
+  const coach = coachText(pr.results); const ce = document.getElementById('pd-coach'); ce.hidden = !coach; ce.textContent = coach;
   show('pd');
 }
 document.getElementById('btn-replay').addEventListener('click', () => { ensureCtx(); cueTarget(); });
@@ -506,7 +601,7 @@ document.getElementById('btn-stop').addEventListener('click', () => { stopStage(
 document.getElementById('btn-again').addEventListener('click', () => { buildTargets(pr.degrees); startC(); });
 document.getElementById('btn-next-stage').addEventListener('click', () => goStage(pr.stage + 1));
 document.getElementById('btn-clear-stars').addEventListener('click', () => { store.stars = {}; save(); renderStages(); toast('星をリセットしました'); });
-document.getElementById('btn-reset').addEventListener('click', () => { stopStage(); store.startMidi = null; save(); document.getElementById('pa-next').hidden = true; document.getElementById('pa-msg').textContent = ' '; const b = document.getElementById('btn-voice'); b.className = 'btn'; b.textContent = '🎤 「あー」を3秒'; b.parentElement.hidden = false; document.getElementById('pa-redo').hidden = true; show('pa'); });
+document.getElementById('btn-reset').addEventListener('click', () => { stopStage(); restorePaText(); store.startMidi = null; save(); document.getElementById('pa-next').hidden = true; document.getElementById('pa-msg').textContent = ' '; const b = document.getElementById('btn-voice'); b.className = 'btn'; b.textContent = '🎤 「あー」を3秒'; b.parentElement.hidden = false; document.getElementById('pa-redo').hidden = true; show('pa'); });
 document.getElementById('seg-tol').addEventListener('click', e => { if (!e.target.dataset.v) return; store.tol = +e.target.dataset.v; CONFIG.okCents = store.tol; save(); [...e.currentTarget.children].forEach(b => b.classList.toggle('on', b === e.target)); });
 if (store.tol === 10) { [...document.getElementById('seg-tol').children].forEach(b => b.classList.toggle('on', b.dataset.v === '10')); }
 
@@ -561,10 +656,12 @@ document.getElementById('btn-high').addEventListener('click', () => measureRange
 /* ---------- 起動 ---------- */
 renderRange();
 renderStages();
-if (store.startMidi) { document.getElementById('pa-msg').textContent = `前回: ドレミは ${noteJP(store.startMidi)}${noteEN(store.startMidi)} から`; document.getElementById('pa-next').hidden = false; document.getElementById('btn-a-next').textContent = '前回の高さで、つぎへ'; document.getElementById('btn-voice').parentElement.hidden = true; document.getElementById('pa-redo').hidden = false; }
+renderStreak();
+/* 9/21「前回の高さで、つぎへ」が分かりにくい → ボタンは「はじめる」だけ。高さの説明は文のほうに */
+if (store.startMidi) { document.getElementById('pa-h2').textContent = 'きょうも、はじめましょう'; document.getElementById('pa-lead').textContent = `ドレミの高さは前回のまま（${noteJP(store.startMidi)}${noteEN(store.startMidi)} から）。変えたいときは「録り直す」。`; document.getElementById('pa-msg').textContent = ' '; document.getElementById('pa-next').hidden = false; document.getElementById('btn-a-next').textContent = '▶ はじめる'; document.getElementById('btn-voice').parentElement.hidden = true; document.getElementById('pa-redo').hidden = false; }
 function isNativeApp() { return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()); }
 if ('serviceWorker' in navigator && !isNativeApp()) { navigator.serviceWorker.register('./sw.js').catch(() => {}); }
-window.__ontei = { framePitchACF, hzToMidiF, noteJP, noteEN, store, pr, buildTargets, startC, show, goStage, STAGES };
+window.__ontei = { framePitchACF, hzToMidiF, noteJP, noteEN, degJP, store, pr, tr, buildTargets, startC, show, goStage, STAGES, starsFor, coachText, noteStats, drawTrace, renderC, finishC };
 </script>
 </body>
 </html>
