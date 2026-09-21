@@ -151,6 +151,7 @@ details{margin-top:8px}summary{color:var(--sub);font-size:14px;cursor:pointer}
     <div class="notes" id="pc-notes"></div>
     <div class="big" id="pc-target">ド</div>
     <div class="center small" id="pc-sub">お手本が鳴ったら、同じ高さで声をのばします。お手本は5秒ごとに鳴ります</div>
+    <div class="row" style="margin:8px 0 6px"><button class="btn sec" id="btn-replay">🔈 もう一度お手本</button><button class="btn ghost" id="btn-stop">やめる</button></div>
     <div class="elev">
       <div class="tone" id="pc-tone">🔈 お手本</div>
       <span class="lab t">高い</span><span class="lab b">低い</span>
@@ -160,7 +161,6 @@ details{margin-top:8px}summary{color:var(--sub);font-size:14px;cursor:pointer}
     <div class="word" id="pc-word">&nbsp;</div>
     <div class="sub" id="pc-now">&nbsp;</div>
     <div class="lvl"><i></i></div><div class="lvl-txt"></div>
-    <div class="row" style="margin-top:10px"><button class="btn sec" id="btn-replay">🔈 もう一度お手本</button><button class="btn ghost" id="btn-stop">やめる</button></div>
     <div class="center" style="margin-top:6px"><button class="btn ghost" id="btn-simul" style="flex:0 0 auto;padding:6px 14px;font-size:13px"></button></div>
   </div>
 
@@ -308,7 +308,7 @@ document.addEventListener('visibilitychange', () => {
   if (mic.ctx && mic.ctx.state !== 'running') mic.ctx.resume().catch(() => {});
   if (mic.wasOn) { mic.wasOn = false; if (pr.active) micStart(); }
 });
-if (IOS) document.getElementById('ios-note').hidden = false;
+if (IOS) { document.getElementById('ios-note').hidden = false; document.getElementById('pc-sub').textContent = 'お手本が鳴ったら、同じ高さで声をのばします。もう一度聞きたいときは「🔈 もう一度お手本」'; }
 document.getElementById('btn-soundtest').addEventListener('click', () => { ensureCtx(); playTone(midiToHz(60), 1.3, true); toast('「うー」が1.3秒鳴ります。聞こえなければ、本体横のスイッチと音量を確認してください'); });
 function onPitch(fn) { mic.listeners.add(fn); } function offPitch(fn) { mic.listeners.delete(fn); }
 
@@ -343,7 +343,7 @@ async function playToneIOS(hz, sec) { const key = Math.round(hz) + ':' + sec; le
 function playTone(hz, sec, keepMic) {
   stopTone(); const ctx = ensureCtx();
   /* 9/21 10周目: マイクを止めた直後に鳴らすと、iOSの出力経路がまだ通話側で無音のまま → 止めてから0.45秒待って鳴らす */
-  const delay = (!keepMic && pauseMicFor(sec * 1000 + 300 + 700)) ? 0.7 : 0;   // 13周目「聞こえたが小さめ」→ 経路の切替を待つ時間を 0.45→0.7秒に
+  const delay = (!keepMic && pauseMicFor(sec * 1000 + 300 + 1000)) ? 1.0 : 0;   // 13周目「聞こえたが小さめ」→ 経路の切替を待つ時間を 0.45→0.7秒に
   const t0 = ctx.currentTime + delay;
   if (delay) { ctx.resume().catch(() => {}); setTimeout(() => { if (ctx.state !== 'running') ctx.resume().catch(() => {}); }, 200); }   // マイクを止めると AudioContext が止まることがある
   if (IOS && !toneUnlocked) unlockToneAudio();   // お手本は WebAudio で鳴らす（無音ループが解錠を担う）
@@ -351,8 +351,10 @@ function playTone(hz, sec, keepMic) {
   const vib = ctx.createOscillator(); vib.frequency.value = 5.2; const vibG = ctx.createGain(); vibG.gain.value = hz * 0.006; vib.connect(vibG); vibG.connect(osc.frequency);
   const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = Math.min(hz * 3.2, 2200); lp.Q.value = 0.9;
   const f1 = ctx.createBiquadFilter(); f1.type = 'peaking'; f1.frequency.value = 350; f1.Q.value = 3; f1.gain.value = 8;
-  const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.8, t0 + 0.1); g.gain.setValueAtTime(0.8, t0 + sec - 0.15); g.gain.exponentialRampToValueAtTime(0.0001, t0 + sec);
-  osc.connect(lp); lp.connect(f1); f1.connect(g); g.connect(ctx.destination); osc.start(t0); vib.start(t0); osc.stop(t0 + sec); vib.stop(t0 + sec);
+  const vol = delay ? 1.8 : 0.8;   // マイクを止めた直後は出力がまだ小さい（15周目）→ 圧縮して大きく
+  const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(vol, t0 + 0.1); g.gain.setValueAtTime(vol, t0 + sec - 0.15); g.gain.exponentialRampToValueAtTime(0.0001, t0 + sec);
+  const comp = ctx.createDynamicsCompressor(); comp.threshold.value = -18; comp.knee.value = 12; comp.ratio.value = 6; comp.attack.value = 0.003; comp.release.value = 0.2;
+  osc.connect(lp); lp.connect(f1); f1.connect(g); g.connect(comp); comp.connect(ctx.destination); osc.start(t0); vib.start(t0); osc.stop(t0 + sec); vib.stop(t0 + sec);
   toneNodes = { osc, vib }; mic.muteUntil = performance.now() + (delay + sec) * 1000 + 250;
   const tl = document.getElementById('pc-tone'); setTimeout(() => tl.classList.add('on'), delay * 1000); setTimeout(() => tl.classList.remove('on'), (delay + sec) * 1000);
 }
