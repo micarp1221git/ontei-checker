@@ -344,6 +344,7 @@ function playTone(hz, sec, keepMic) {
   stopTone(); const ctx = ensureCtx();
   /* 9/21 10周目: マイクを止めた直後に鳴らすと、iOSの出力経路がまだ通話側で無音のまま → 止めてから0.45秒待って鳴らす */
   const delay = (!keepMic && pauseMicFor(sec * 1000 + 300 + 450)) ? 0.45 : 0; const t0 = ctx.currentTime + delay;
+  if (delay) { ctx.resume().catch(() => {}); setTimeout(() => { if (ctx.state !== 'running') ctx.resume().catch(() => {}); }, 200); }   // マイクを止めると AudioContext が止まることがある
   if (IOS && !toneUnlocked) unlockToneAudio();   // お手本は WebAudio で鳴らす（無音ループが解錠を担う）
   const osc = ctx.createOscillator(); osc.type = 'sawtooth'; osc.frequency.value = hz;
   const vib = ctx.createOscillator(); vib.frequency.value = 5.2; const vibG = ctx.createGain(); vibG.gain.value = hz * 0.006; vib.connect(vibG); vibG.connect(osc.frequency);
@@ -358,6 +359,8 @@ function stopTone() { if (toneNodes) { try { toneNodes.osc.stop(); toneNodes.vib
 function playSeq(midis, gap) { pauseMicFor(midis.length * gap + 300); midis.forEach((m, i) => setTimeout(() => playTone(midiToHz(m), gap / 1000 * 0.92, true), i * gap)); return midis.length * gap; }
 
 /* ---------- 共通 ---------- */
+window.addEventListener('error', e => { try { toast('エラー: ' + String(e.message || e).slice(0, 90)); } catch (x) {} });
+window.addEventListener('unhandledrejection', e => { try { toast('エラー: ' + String(e.reason && e.reason.message || e.reason).slice(0, 90)); } catch (x) {} });
 function toast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 2200); }
 function centsToPct(c) { const a = Math.min(Math.abs(c), 700); const w = a <= 100 ? a / 100 * 25 : 25 + (a - 100) / 600 * 23; return Math.sign(c) * w; }
 function levelWord(c) { const a = Math.abs(c); if (a <= CONFIG.okCents) return ['ok', 'ぴったり！ そのまま…']; if (a <= CONFIG.nearCents) return ['near', c > 0 ? '近い。ほんの少し下げて' : '近い。ほんの少し上げて']; if (a <= 250) return ['far', c > 0 ? '少し高い ↓' : '少し低い ↑']; return ['far', c > 0 ? 'ずいぶん高い ↓↓' : 'ずいぶん低い ↑↑']; }
