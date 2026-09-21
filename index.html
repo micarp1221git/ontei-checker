@@ -84,6 +84,7 @@ nav button.on{color:var(--tab);font-weight:700}
 .seg{display:flex;border:1.5px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}
 .seg button{flex:1;border:0;background:transparent;padding:10px 6px;font-size:14px;color:var(--sub)}
 .seg button.on{background:var(--accent);color:#fff}
+#pb-levels button{padding:8px 2px;font-size:13px;line-height:1.3}#pb-levels button .st{display:block;font-size:12px;letter-spacing:.05em;min-height:16px}
 details{margin-top:8px}summary{color:var(--sub);font-size:14px;cursor:pointer}
 .result{padding-left:20px;margin:6px 0}.result li{margin:4px 0}
 .btn.rec{background:var(--far);box-shadow:0 0 0 4px rgba(192,80,77,.25)}
@@ -132,8 +133,12 @@ details{margin-top:8px}summary{color:var(--sub);font-size:14px;cursor:pointer}
     <div class="step" id="pb-step">ステージ1 単音</div>
     <h2 id="pb-title">まず、聞いてみましょう</h2>
     <p class="lead" id="pb-lead">あなたの声に合わせた高さで鳴ります。まずは聞くだけ。</p>
+    <div class="seg" id="pb-levels" hidden style="margin:0 0 10px"></div>
     <div class="notes wrap" id="pb-notes"></div>
     <div class="row"><button class="btn sec" id="btn-listen">🔈 聞く</button><button class="btn" id="btn-b-next" disabled>いっしょにやる</button></div>
+    <div class="small" style="margin-top:12px">合格の幅</div>
+    <div class="seg" id="seg-tol" style="margin-top:4px"><button data-v="50">かんたん</button><button data-v="30" class="on">ふつう</button><button data-v="10">きびしい</button></div>
+    <p class="hint" style="margin-top:4px">かんたん＝半音の5割以内で合格。ふつう＝3割。きびしい＝1割。</p>
     <p class="hint" id="pb-how">「いっしょにやる」を押すと、1音ずつ進みます。お手本が鳴ったら、同じ高さで「あー」。合ったら次の音に進みます。</p>
     <p class="hint">高すぎる・低すぎると感じたら、半音ずつ動かせます。</p>
     <div class="row" style="margin-top:8px"><button class="btn ghost" id="btn-lower">♭ 少し低く</button><button class="btn ghost" id="btn-higher">♯ 少し高く</button></div>
@@ -183,9 +188,7 @@ details{margin-top:8px}summary{color:var(--sub);font-size:14px;cursor:pointer}
 
   <details><summary>設定</summary>
     <div class="card" style="margin-top:6px">
-      <div class="small">合格の幅</div>
-      <div class="seg" id="seg-tol" style="margin-top:6px"><button data-v="30" class="on">やさしい</button><button data-v="10">きびしい</button></div>
-      <p class="hint">やさしい＝半音の3割以内で合格。きびしい＝1割以内。スマホのマイクでは少しの揺れが常に出ます。</p>
+      <p class="hint">合格の幅（かんたん／ふつう／きびしい）は「聞く」画面で変えられます。スマホのマイクでは少しの揺れが常に出ます。</p>
       <div class="row" style="margin-top:10px"><button class="btn ghost" id="btn-reset">高さを決め直す（楽な高さの「あー」から）</button><button class="btn ghost" id="btn-clear-stars">星をリセット</button></div>
     </div>
   </details>
@@ -244,13 +247,21 @@ const IOS = /iPhone|iPad|iPod/.test(navigator.userAgent);   // 9/21 12周目: �
 const CONFIG = { silenceRMS: 0.0025, pitchMinHz: 60, pitchMaxHz: 1200, okCents: 30, nearCents: 60, holdMs: 800, a4: 440, replayMs: 5000, toneSec: 1.3 };
 const PC_JP = ['ド','ド♯','レ','レ♯','ミ','ファ','ファ♯','ソ','ソ♯','ラ','ラ♯','シ'];
 const NAMES_EN = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
-const STAGES = { 1: { name: '単音', seq: [0], lead: 'ステージ1は「ド」1音。聞こえた高さを、声でとります。' }, 2: { name: '音階', seq: [0, 2, 4, 5, 7, 5, 4, 2, 0], lead: 'ドレミファソと上がって、ソファミレドと下ります。' }, 3: { name: 'メロディ', seq: null, lead: '選んだメロディを、1音ずつ。' } };
+/* 9/22 みかさん「ドレミファソだけでひとまとまり。ソファミレドはその次。上って下るはさらに次」→ ステージ2を3段に */
+const STAGES = { 1: { name: '単音', seq: [0], lead: 'ステージ1は「ド」1音。聞こえた高さを、声でとります。' },
+  2: { name: '音階', levels: [{ name: 'ドレミファソ', seq: [0, 2, 4, 5, 7], lead: 'ドレミファソと、上がります。' }, { name: 'ソファミレド', seq: [7, 5, 4, 2, 0], lead: 'ソファミレドと、下ります。' }, { name: '上って下る', seq: [0, 2, 4, 5, 7, 5, 4, 2, 0], lead: 'ドレミファソと上がって、ソファミレドと下ります。' }] },
+  3: { name: 'メロディ', seq: null, lead: '選んだメロディを、1音ずつ。' } };
+function levelsOf(n) { return STAGES[n].levels || null; }
+function starKey(n, lv) { return levelsOf(n) ? `${n}-${lv}` : String(n); }
+function starsOf(n, lv) { return Math.min(3, +store.stars[starKey(n, lv)] || 0); }
+function stageCleared(n) { const L = levelsOf(n); return L ? L.every((_, i) => starsOf(n, i) > 0) : starsOf(n) > 0; }
 const PAD = [[0,'ド'],[2,'レ'],[4,'ミ'],[5,'ファ'],[7,'ソ'],[9,'ラ'],[11,'シ'],[12,'ド↑']];
 const KEY = 'ontei-checker-v05';
 /* stars は段階ごとに 1〜3 の数（v0.6までは true/false。+true=1 なのでそのまま読める）。days は練習した日（連続日数用） */
 let store = { startMidi: null, tol: 30, range: null, rangeLog: [], stars: {}, melody: [], simul: true, days: [] };
 try { Object.assign(store, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) {}
 if (!Array.isArray(store.days)) store.days = [];
+if (store.stars[2] && store.stars['2-2'] === undefined) { const v = +store.stars[2] || 1; store.stars['2-0'] = store.stars['2-1'] = store.stars['2-2'] = v; }   // v0.7の音階クリアは3段ぶん認める
 function save() { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) {} }
 CONFIG.okCents = store.tol || 30;
 /* 9/21 表示は「移動ド」: ♭♯で高さをずらしても、子どもに見せる名前は常にドレミファソ（絶対音名は小さく添える）。
@@ -439,7 +450,11 @@ document.getElementById('btn-redo').addEventListener('click', () => { restorePaT
 
 /* ---------- ステージ（すごろく） ---------- */
 function renderStages() {
-  document.querySelectorAll('#stages .stage').forEach(el => { const n = +el.dataset.stage; el.classList.toggle('cur', n === pr.stage); el.querySelector('.s').textContent = '★'.repeat(Math.min(3, +store.stars[n] || 0)); el.classList.toggle('locked', n > 1 && !store.stars[n - 1] && !store.stars[n]); });
+  document.querySelectorAll('#stages .stage').forEach(el => { const n = +el.dataset.stage; el.classList.toggle('cur', n === pr.stage);
+    const L = levelsOf(n); let txt = '';
+    if (L) { const done = L.filter((_, i) => starsOf(n, i) > 0).length; txt = done === L.length ? '★'.repeat(Math.min(...L.map((_, i) => starsOf(n, i)))) : done ? `${done}/${L.length}` : ''; }   // 3段そろったら星（いちばん低い段の星）、途中は 1/3
+    else txt = '★'.repeat(starsOf(n));
+    el.querySelector('.s').textContent = txt; el.classList.toggle('locked', n > 1 && !stageCleared(n - 1) && !stageCleared(n) && !(L && L.some((_, i) => starsOf(n, i) > 0))); });
 }
 /* ---------- 連続日数（ゲーミフィケーションの土台。クリアした日を貯める） ---------- */
 function dayKey(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
@@ -447,13 +462,18 @@ function markDay() { const k = dayKey(new Date()); if (!store.days.includes(k)) 
 function streakCount() { const set = new Set(store.days); const d = new Date(); if (!set.has(dayKey(d))) d.setDate(d.getDate() - 1); let n = 0; while (set.has(dayKey(d))) { n++; d.setDate(d.getDate() - 1); } return n; }
 function renderStreak() { const el = document.getElementById('streak'); const n = streakCount(); el.hidden = !n; el.textContent = `🔥 ${n}日連続`; }
 document.querySelectorAll('#stages .stage').forEach(el => el.addEventListener('click', () => { if (!store.startMidi) { toast('まず、楽な高さで「あー」から'); show('pa'); return; } goStage(+el.dataset.stage); }));
-function goStage(n) {
-  pr.stage = n; renderStages(); stopStage();
+function goStage(n, lv) {
+  pr.stage = n; const L = levelsOf(n);
+  if (L) { if (lv === undefined) { lv = L.findIndex((_, i) => !starsOf(n, i)); if (lv < 0) lv = 0; } pr.level = lv; } else pr.level = 0;   // 段の指定が無ければ、まだ星の無い最初の段
+  renderStages(); stopStage();
   if (n === 3) { renderPad(); show('pm'); return; }
-  buildTargets(STAGES[n].seq); renderB(); show('pb');
+  buildTargets(L ? L[pr.level].seq : STAGES[n].seq); renderB(); show('pb');
 }
 function stopStage() { pr.active = false; offPitch(cTick); clearInterval(pr.replayTimer); stopTone(); }
-function stageLabel() { return `ステージ${pr.stage} ${STAGES[pr.stage].name}`; }
+function curLevel() { const L = levelsOf(pr.stage); return L ? L[pr.level] : STAGES[pr.stage]; }
+function stageLabel() { const L = levelsOf(pr.stage); return `ステージ${pr.stage} ${STAGES[pr.stage].name}` + (L ? ` ${pr.level + 1}「${L[pr.level].name}」` : ''); }
+/* 次の一手: 同じステージに次の段があればそこへ、無ければ次のステージへ */
+function nextStep() { const L = levelsOf(pr.stage); if (L && pr.level < L.length - 1) return { stage: pr.stage, level: pr.level + 1, label: `つぎへ: ${L[pr.level + 1].name}` }; if (pr.stage < 3) return { stage: pr.stage + 1, level: 0, label: `つぎへ: ステージ${pr.stage + 1} ${STAGES[pr.stage + 1].name}` }; return null; }
 
 /* ---------- メロディ作り ---------- */
 function renderPad() {
@@ -470,7 +490,10 @@ document.getElementById('btn-seq-go').addEventListener('click', () => { buildTar
 function renderB() {
   const n = document.getElementById('pb-notes'); n.innerHTML = ''; pr.degrees.forEach(d => { const s = document.createElement('span'); s.textContent = degJP(d); s.className = degJP(d).length > 1 ? 'two' : ''; n.appendChild(s); });
   document.getElementById('pb-key').textContent = keyLabel();
-  document.getElementById('pb-step').textContent = stageLabel(); document.getElementById('pb-lead').textContent = STAGES[pr.stage].lead + ' まずは聞くだけ。'; document.getElementById('pb-title').textContent = pr.targets.length === 1 ? `「${degJP(pr.degrees[0])}」を、聞いてみましょう` : 'まず、聞いてみましょう';
+  document.getElementById('pb-step').textContent = stageLabel(); document.getElementById('pb-lead').textContent = curLevel().lead + ' まずは聞くだけ。';
+  const lvBox = document.getElementById('pb-levels'), L = levelsOf(pr.stage); lvBox.hidden = !L; lvBox.innerHTML = '';
+  if (L) L.forEach((lv, i) => { const b = document.createElement('button'); const st = starsOf(pr.stage, i); b.textContent = `${i + 1} ${lv.name}`; const ss = document.createElement('span'); ss.className = 'st'; ss.textContent = '★'.repeat(st); b.appendChild(ss); b.className = i === pr.level ? 'on' : ''; const locked = i > 0 && !starsOf(pr.stage, i - 1); if (locked) b.style.opacity = '.5';
+    b.addEventListener('click', () => { if (locked) { toast(`先に「${L[i - 1].name}」をクリア`); return; } goStage(pr.stage, i); }); lvBox.appendChild(b); }); document.getElementById('pb-title').textContent = pr.targets.length === 1 ? `「${degJP(pr.degrees[0])}」を、聞いてみましょう` : 'まず、聞いてみましょう';
   document.getElementById('btn-b-next').disabled = true; const bl = document.getElementById('btn-listen'); bl.disabled = false; bl.textContent = '🔈 聞く';
 }
 document.getElementById('btn-listen').addEventListener('click', () => {
@@ -584,10 +607,10 @@ function finishC() {
   row([['音'], ['入り方'], ['揺れ', 'r'], ['秒', 'r']], 'head');
   pr.results.forEach(r => row([[degJP(r.deg), 'b'], [APPROACH_JP[r.approach], 'a ' + r.approach], [`±${r.wobble.toFixed(0)}`, 'r'], [r.lockSec.toFixed(1), 'r']]));
   const avg = pr.results.reduce((a, r) => a + r.cents, 0) / pr.results.length;
-  const stars = starsFor(pr.results); store.stars[pr.stage] = Math.max(+store.stars[pr.stage] || 0, stars); save(); renderStages(); markDay();
+  const stars = starsFor(pr.results), sk = starKey(pr.stage, pr.level); store.stars[sk] = Math.max(+store.stars[sk] || 0, stars); save(); renderStages(); markDay();
   const sp = document.querySelectorAll('#pd-stars span'); sp.forEach((s, i) => { s.className = ''; void s.offsetWidth; if (i < stars) { s.className = 'on'; s.style.animationDelay = (0.15 + i * 0.25) + 's'; } });
   document.getElementById('pd-title').textContent = `${stageLabel()}、クリア`;
-  document.getElementById('btn-next-stage').hidden = pr.stage >= 3; document.getElementById('btn-next-stage').textContent = pr.stage < 3 ? `つぎへ: ステージ${pr.stage + 1} ${STAGES[pr.stage + 1].name}` : '';
+  const nx = nextStep(); document.getElementById('btn-next-stage').hidden = !nx; document.getElementById('btn-next-stage').textContent = nx ? nx.label : '';
   document.getElementById('pd-msg').textContent = Math.abs(avg) <= 10 ? '全部、真ん中で取れています。' : avg > 0 ? '全体に、ほんの少し高めに取る傾向があります。次は「少し低め」を意識してみてください。' : '全体に、ほんの少し低めに取る傾向があります。次は「少し高め」を意識してみてください。';
   const coach = coachText(pr.results); const ce = document.getElementById('pd-coach'); ce.hidden = !coach; ce.textContent = coach;
   show('pd');
@@ -599,11 +622,11 @@ document.getElementById('btn-simul').addEventListener('click', () => { store.sim
 renderSimul();
 document.getElementById('btn-stop').addEventListener('click', () => { stopStage(); renderB(); show('pb'); });
 document.getElementById('btn-again').addEventListener('click', () => { buildTargets(pr.degrees); startC(); });
-document.getElementById('btn-next-stage').addEventListener('click', () => goStage(pr.stage + 1));
+document.getElementById('btn-next-stage').addEventListener('click', () => { const nx = nextStep(); if (nx) goStage(nx.stage, nx.level); });
 document.getElementById('btn-clear-stars').addEventListener('click', () => { store.stars = {}; save(); renderStages(); toast('星をリセットしました'); });
 document.getElementById('btn-reset').addEventListener('click', () => { stopStage(); restorePaText(); store.startMidi = null; save(); document.getElementById('pa-next').hidden = true; document.getElementById('pa-msg').textContent = ' '; const b = document.getElementById('btn-voice'); b.className = 'btn'; b.textContent = '🎤 「あー」を3秒'; b.parentElement.hidden = false; document.getElementById('pa-redo').hidden = true; show('pa'); });
 document.getElementById('seg-tol').addEventListener('click', e => { if (!e.target.dataset.v) return; store.tol = +e.target.dataset.v; CONFIG.okCents = store.tol; save(); [...e.currentTarget.children].forEach(b => b.classList.toggle('on', b === e.target)); });
-if (store.tol === 10) { [...document.getElementById('seg-tol').children].forEach(b => b.classList.toggle('on', b.dataset.v === '10')); }
+[...document.getElementById('seg-tol').children].forEach(b => b.classList.toggle('on', +b.dataset.v === (store.tol || 30)));
 
 /* ==========================================================
    ピッチ計
