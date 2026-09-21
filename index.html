@@ -343,14 +343,14 @@ async function playToneIOS(hz, sec) { const key = Math.round(hz) + ':' + sec; le
 function playTone(hz, sec, keepMic) {
   stopTone(); const ctx = ensureCtx();
   /* 9/21 10周目: マイクを止めた直後に鳴らすと、iOSの出力経路がまだ通話側で無音のまま → 止めてから0.45秒待って鳴らす */
-  const delay = (!keepMic && pauseMicFor(sec * 1000 + 300 + 450)) ? 0.45 : 0; const t0 = ctx.currentTime + delay;
+  const delay = (!keepMic && pauseMicFor(sec * 1000 + 300 + 700)) ? 0.7 : 0;   // 13周目「聞こえたが小さめ」→ 経路の切替を待つ時間を 0.45→0.7秒に const t0 = ctx.currentTime + delay;
   if (delay) { ctx.resume().catch(() => {}); setTimeout(() => { if (ctx.state !== 'running') ctx.resume().catch(() => {}); }, 200); }   // マイクを止めると AudioContext が止まることがある
   if (IOS && !toneUnlocked) unlockToneAudio();   // お手本は WebAudio で鳴らす（無音ループが解錠を担う）
   const osc = ctx.createOscillator(); osc.type = 'sawtooth'; osc.frequency.value = hz;
   const vib = ctx.createOscillator(); vib.frequency.value = 5.2; const vibG = ctx.createGain(); vibG.gain.value = hz * 0.006; vib.connect(vibG); vibG.connect(osc.frequency);
   const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = Math.min(hz * 3.2, 2200); lp.Q.value = 0.9;
   const f1 = ctx.createBiquadFilter(); f1.type = 'peaking'; f1.frequency.value = 350; f1.Q.value = 3; f1.gain.value = 8;
-  const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.6, t0 + 0.1); g.gain.setValueAtTime(0.6, t0 + sec - 0.15); g.gain.exponentialRampToValueAtTime(0.0001, t0 + sec);
+  const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.8, t0 + 0.1); g.gain.setValueAtTime(0.8, t0 + sec - 0.15); g.gain.exponentialRampToValueAtTime(0.0001, t0 + sec);
   osc.connect(lp); lp.connect(f1); f1.connect(g); g.connect(ctx.destination); osc.start(t0); vib.start(t0); osc.stop(t0 + sec); vib.stop(t0 + sec);
   toneNodes = { osc, vib }; mic.muteUntil = performance.now() + (delay + sec) * 1000 + 250;
   const tl = document.getElementById('pc-tone'); setTimeout(() => tl.classList.add('on'), delay * 1000); setTimeout(() => tl.classList.remove('on'), (delay + sec) * 1000);
