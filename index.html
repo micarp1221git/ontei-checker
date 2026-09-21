@@ -235,7 +235,7 @@ const NAMES_EN = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 const STAGES = { 1: { name: '単音', seq: [0], lead: 'ステージ1は「ド」1音。聞こえた高さを、声でとります。' }, 2: { name: '音階', seq: [0, 2, 4, 5, 7, 5, 4, 2, 0], lead: 'ドレミファソと上がって、ソファミレドと下ります。' }, 3: { name: 'メロディ', seq: null, lead: '選んだメロディを、1音ずつ。' } };
 const PAD = [[0,'ド'],[2,'レ'],[4,'ミ'],[5,'ファ'],[7,'ソ'],[9,'ラ'],[11,'シ'],[12,'ド↑']];
 const KEY = 'ontei-checker-v05';
-let store = { startMidi: null, tol: 30, range: null, rangeLog: [], stars: {}, melody: [], simul: false };
+let store = { startMidi: null, tol: 30, range: null, rangeLog: [], stars: {}, melody: [], simul: true };
 try { Object.assign(store, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) {}
 function save() { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) {} }
 CONFIG.okCents = store.tol || 30;
@@ -268,7 +268,7 @@ function framePitchACF(buf, rate) {
 
 /* ---------- マイク（iPhone Safari 対策込み） ---------- */
 const mic = { ctx: null, analyser: null, stream: null, buf: null, listeners: new Set(), hist: [], level: 0, running: false, muteUntil: 0 };
-function ensureCtx() { if (!mic.ctx) mic.ctx = new (window.AudioContext || window.webkitAudioContext)(); if (mic.ctx.state !== 'running') mic.ctx.resume().catch(() => {}); return mic.ctx; }
+function ensureCtx() { if (!mic.ctx) mic.ctx = new (window.AudioContext || window.webkitAudioContext)(); if (mic.ctx.state !== 'running') mic.ctx.resume().catch(() => {}); unlockToneAudio(); return mic.ctx; }
 async function micStart() {
   const ctx = ensureCtx();
   if (mic.stream) { await ctx.resume().catch(() => {}); if (!mic.running) loop(); return true; }
@@ -311,9 +311,27 @@ const IOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
 let micResumeTimer = 0;
 function micPause() { if (!mic.stream) return false; try { mic.stream.getTracks().forEach(t => t.stop()); } catch (e) {} mic.stream = null; mic.analyser = null; mic.hist.length = 0; return true; }
 function pauseMicFor(ms) { if (!IOS || store.simul) return; const was = micPause() || !!micResumeTimer; clearTimeout(micResumeTimer); micResumeTimer = 0; if (was) micResumeTimer = setTimeout(() => { micResumeTimer = 0; micStart(); }, ms); }
+/* iPhone: WebAudio の音はサイレントスイッチで消える・マイク使用中は小さくなる（9/21 みかさん「音聞こえない」）。
+   → iPhoneでは音を <audio> 要素で鳴らす（メディア扱い＝サイレントでも鳴る）。音は OfflineAudioContext で同じ「うー」を作って WAV にする */
+const toneAudio = new Audio(); toneAudio.setAttribute('playsinline', ''); let toneUnlocked = false; const toneCache = new Map();
+function wavUrl(buf) { const n = buf.length, d = new DataView(new ArrayBuffer(44 + n * 2)); const w = (o, str) => { for (let i = 0; i < str.length; i++) d.setUint8(o + i, str.charCodeAt(i)); };
+  w(0, 'RIFF'); d.setUint32(4, 36 + n * 2, true); w(8, 'WAVE'); w(12, 'fmt '); d.setUint32(16, 16, true); d.setUint16(20, 1, true); d.setUint16(22, 1, true); d.setUint32(24, buf.sampleRate, true); d.setUint32(28, buf.sampleRate * 2, true); d.setUint16(32, 2, true); d.setUint16(34, 16, true); w(36, 'data'); d.setUint32(40, n * 2, true);
+  const ch = buf.getChannelData(0); for (let i = 0; i < n; i++) { const v = Math.max(-1, Math.min(1, ch[i])); d.setInt16(44 + i * 2, v < 0 ? v * 32768 : v * 32767, true); }
+  return URL.createObjectURL(new Blob([d.buffer], { type: 'audio/wav' })); }
+function unlockToneAudio() { if (toneUnlocked || !IOS) return; try { const sr = 8000, oc = new OfflineAudioContext(1, sr * 0.2, sr); oc.startRendering().then(b => { toneAudio.src = wavUrl(b); toneAudio.play().then(() => { toneUnlocked = true; }).catch(() => {}); }); } catch (e) {} }
+function buildTone(oc, hz, sec) { const t0 = 0; const osc = oc.createOscillator(); osc.type = 'sawtooth'; osc.frequency.value = hz;
+  const vib = oc.createOscillator(); vib.frequency.value = 5.2; const vibG = oc.createGain(); vibG.gain.value = hz * 0.006; vib.connect(vibG); vibG.connect(osc.frequency);
+  const lp = oc.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = Math.min(hz * 3.2, 2200); lp.Q.value = 0.9;
+  const f1 = oc.createBiquadFilter(); f1.type = 'peaking'; f1.frequency.value = 350; f1.Q.value = 3; f1.gain.value = 8;
+  const g = oc.createGain(); g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.9, t0 + 0.1); g.gain.setValueAtTime(0.9, t0 + sec - 0.15); g.gain.exponentialRampToValueAtTime(0.0001, t0 + sec);
+  osc.connect(lp); lp.connect(f1); f1.connect(g); g.connect(oc.destination); osc.start(t0); vib.start(t0); osc.stop(t0 + sec); vib.stop(t0 + sec); }
+async function playToneIOS(hz, sec) { const key = Math.round(hz) + ':' + sec; let url = toneCache.get(key);
+  if (!url) { const sr = 22050, oc = new OfflineAudioContext(1, Math.ceil(sr * (sec + 0.05)), sr); buildTone(oc, hz, sec); url = wavUrl(await oc.startRendering()); toneCache.set(key, url); }
+  toneAudio.pause(); toneAudio.src = url; toneAudio.currentTime = 0; toneAudio.play().catch(() => {}); }
 function playTone(hz, sec, keepMic) {
   stopTone(); const ctx = ensureCtx(); const t0 = ctx.currentTime;
   if (!keepMic) pauseMicFor(sec * 1000 + 300);
+  if (IOS) { playToneIOS(hz, sec); mic.muteUntil = performance.now() + sec * 1000 + 250; const tl0 = document.getElementById('pc-tone'); tl0.classList.add('on'); setTimeout(() => tl0.classList.remove('on'), sec * 1000); return; }
   const osc = ctx.createOscillator(); osc.type = 'sawtooth'; osc.frequency.value = hz;
   const vib = ctx.createOscillator(); vib.frequency.value = 5.2; const vibG = ctx.createGain(); vibG.gain.value = hz * 0.006; vib.connect(vibG); vibG.connect(osc.frequency);
   const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = Math.min(hz * 3.2, 2200); lp.Q.value = 0.9;
@@ -323,7 +341,7 @@ function playTone(hz, sec, keepMic) {
   toneNodes = { osc, vib }; mic.muteUntil = performance.now() + sec * 1000 + 250;
   const tl = document.getElementById('pc-tone'); tl.classList.add('on'); setTimeout(() => tl.classList.remove('on'), sec * 1000);
 }
-function stopTone() { if (toneNodes) { try { toneNodes.osc.stop(); toneNodes.vib.stop(); } catch (e) {} toneNodes = null; } }
+function stopTone() { if (toneNodes) { try { toneNodes.osc.stop(); toneNodes.vib.stop(); } catch (e) {} toneNodes = null; } try { if (IOS && !toneAudio.paused) toneAudio.pause(); } catch (e) {} }
 function playSeq(midis, gap) { pauseMicFor(midis.length * gap + 300); midis.forEach((m, i) => setTimeout(() => playTone(midiToHz(m), gap / 1000 * 0.92, true), i * gap)); return midis.length * gap; }
 
 /* ---------- 共通 ---------- */
@@ -462,7 +480,7 @@ function finishC() {
 }
 document.getElementById('btn-replay').addEventListener('click', () => { ensureCtx(); cueTarget(); });
 /* 9/21 みかさん「声を出すのと聞くのと同時に両立させたい」→ iPhoneで両立できるかは実機でしか分からないので、切り替えて試せるようにする */
-function renderSimul() { const b = document.getElementById('btn-simul'); if (!b) return; b.textContent = store.simul ? '同時モード: 入（お手本の間もマイクを止めない）' : '同時モード: 切（お手本の間はマイクを止める）'; }
+function renderSimul() { const b = document.getElementById('btn-simul'); if (!b) return; b.textContent = store.simul ? 'お手本の間のマイク: そのまま（既定）' : 'お手本の間のマイク: 止める（許可の表示が出ます）'; }
 document.getElementById('btn-simul').addEventListener('click', () => { store.simul = !store.simul; save(); renderSimul(); toast(store.simul ? '同時モードにしました。お手本が小さく聞こえたら「切」に戻してください' : 'お手本の間はマイクを止めます'); });
 renderSimul();
 document.getElementById('btn-stop').addEventListener('click', () => { stopStage(); renderB(); show('pb'); });
