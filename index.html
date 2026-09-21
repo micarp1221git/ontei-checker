@@ -316,7 +316,9 @@ let toneNodes = null;
 const IOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
 let micResumeTimer = 0;
 function micPause() { if (!mic.stream) return false; try { mic.stream.getTracks().forEach(t => t.stop()); } catch (e) {} mic.stream = null; mic.analyser = null; mic.hist.length = 0; return true; }
-function pauseMicFor(ms) { return; /* 9/21 6周目: マイクを止めると許可の表示が繰り返し出る→廃止 */ if (!IOS || store.simul) return; const was = micPause() || !!micResumeTimer; clearTimeout(micResumeTimer); micResumeTimer = 0; if (was) micResumeTimer = setTimeout(() => { micResumeTimer = 0; micStart(); }, ms); }
+/* 9/21 9周目で確定: マイクを使っていない時は鳴る（音量ボタンにも追従）＝マイク同居で出力が消える。だから鳴らす間だけマイクを止める。
+   iOSは開き直すたびに「マイクへのアクセス」の表示を出すので、自動の5秒ごと繰り返しはiPhoneでは行わず、音は「ボタン」と「次の音に進んだ時」だけ */
+function pauseMicFor(ms) { if (!IOS) return; const was = micPause() || !!micResumeTimer; clearTimeout(micResumeTimer); micResumeTimer = 0; if (was) micResumeTimer = setTimeout(() => { micResumeTimer = 0; micStart(); }, ms); }
 /* iPhone: WebAudio の音はサイレントスイッチで消える・マイク使用中は小さくなる（9/21 みかさん「音聞こえない」）。
    → iPhoneでは音を <audio> 要素で鳴らす（メディア扱い＝サイレントでも鳴る）。音は OfflineAudioContext で同じ「うー」を作って WAV にする */
 const toneAudio = new Audio(); toneAudio.setAttribute('playsinline', ''); let toneUnlocked = false; const toneCache = new Map();
@@ -445,7 +447,7 @@ function buildTargets(degrees) { pr.degrees = degrees.slice(); pr.targets = degr
 async function startC() {
   ensureCtx(); if (!(await micStart())) return;
   show('pc'); document.getElementById('pc-step').textContent = stageLabel(); pr.active = true; pr.okSince = 0; pr.smooth = null; renderC(); onPitch(cTick);
-  cueTarget(); clearInterval(pr.replayTimer); pr.replayTimer = setInterval(() => { if (pr.active) cueTarget(); }, CONFIG.replayMs);
+  cueTarget(); clearInterval(pr.replayTimer); if (!IOS) pr.replayTimer = setInterval(() => { if (pr.active) cueTarget(); }, CONFIG.replayMs);
 }
 function cueTarget() { playTone(midiToHz(pr.targets[pr.idx]), CONFIG.toneSec); }
 function renderC() {
