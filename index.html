@@ -176,8 +176,8 @@ details{margin-top:8px}summary{color:var(--sub);font-size:14px;cursor:pointer}
     <div class="word" id="pc-word">&nbsp;</div>
     <div class="sub" id="pc-now">&nbsp;</div>
     <!-- 9/22 夕 みかさん「判定スタートがいつか分かりにくい。出遅れるとレの枠でドを歌って弾かれる」→ 🎤 歌う ボタン。押すまで測らない。お手本と同じ大きさで横並び・グラフと一緒にスクロール無しで見える -->
-    <div class="row" style="margin:6px 0 4px"><button class="btn sec" id="btn-replay">🔈 お手本</button><button class="btn" id="btn-sing">🎤 歌う</button></div>
-    <div class="center small" id="pc-sub">お手本を聞いたら「🎤 歌う」を押して、同じ高さで声をのばします</div>
+    <div class="row" style="margin:6px 0 4px"><button class="btn sec" id="btn-replay">🔈 お手本</button><button class="btn" id="btn-sing">▶ 判定スタート</button></div>
+    <div class="center small" id="pc-sub">お手本を聞いたら「判定スタート」を押して、同じ高さで声をのばします</div>
     <div class="lvl"><i></i></div><div class="lvl-txt"></div>
     <div class="center" style="margin-top:6px"><button class="btn ghost" id="btn-stop" style="flex:0 0 auto;padding:6px 14px;font-size:13px">やめる</button><button class="btn ghost" id="btn-simul" style="flex:0 0 auto;padding:6px 14px;font-size:13px"></button></div>
   </div>
@@ -246,7 +246,7 @@ details{margin-top:8px}summary{color:var(--sub);font-size:14px;cursor:pointer}
 
 <script>
 /* ==========================================================
-   音程チェッカー v1.2（2026-09-22夕）— 「🎤 歌う」ボタン: 押すまで測らない（出遅れて次の音の枠で弾かれる問題）。お手本と横並び・やめるは下の小ボタンへ／v1.1（2026-09-22夕）— フレーズのお手本を1音0.65秒に（単音1.3秒の半分・16分のイメージ）、人の判定も短く（最短0.12秒・歌い終わり0.7秒）／v1.0（2026-09-22昼）— 2音以上はフレーズモード（お手本1音1.3秒→つづけて歌う→歌い終わりにまとめて判定・階段グラフ）／v0.9=保持0.5秒／v0.8=ステージ2を3段・合格の幅3段階／v0.7（2026-09-21夜）— 軌跡・保持ゲージ・入り方の分析・星3段階・連続日数（みかさん「可視化から発生の改善へ」）。v0.6=すごろく 単音→音階→メロディ
+   音程チェッカー v1.3（2026-09-22夜）— ボタン名「判定スタート」・フレーズのお手本を途切れなくつなげて鳴らす（1つの音源で高さだけ切り替える）／v1.2（2026-09-22夕）— 「🎤 歌う」ボタン: 押すまで測らない（出遅れて次の音の枠で弾かれる問題）。お手本と横並び・やめるは下の小ボタンへ／v1.1（2026-09-22夕）— フレーズのお手本を1音0.65秒に（単音1.3秒の半分・16分のイメージ）、人の判定も短く（最短0.12秒・歌い終わり0.7秒）／v1.0（2026-09-22昼）— 2音以上はフレーズモード（お手本1音1.3秒→つづけて歌う→歌い終わりにまとめて判定・階段グラフ）／v0.9=保持0.5秒／v0.8=ステージ2を3段・合格の幅3段階／v0.7（2026-09-21夜）— 軌跡・保持ゲージ・入り方の分析・星3段階・連続日数（みかさん「可視化から発生の改善へ」）。v0.6=すごろく 単音→音階→メロディ
    ピッチ検出は「声の育成日記」の framePitchACF（自己相関法）を流用。端末内で完結。
    ========================================================== */
 const IOS = /iPhone|iPad|iPod/.test(navigator.userAgent);   // 9/21 12周目: 定義より前で使っていて読み込み時に落ち、全ボタンが死んでいた → 先頭へ
@@ -405,7 +405,27 @@ function playTone(hz, sec, keepMic, chime) {
   const tl = document.getElementById('pc-tone'); setTimeout(() => tl.classList.add('on'), (delay + pre) * 1000); setTimeout(() => tl.classList.remove('on'), (delay + pre + sec) * 1000);
 }
 function stopTone() { if (toneNodes) { try { toneNodes.osc.stop(); toneNodes.vib.stop(); } catch (e) {} toneNodes = null; } }
-function playSeq(midis, gap) { const d = pauseMicFor(1000 + midis.length * gap + 300) ? 1000 : 0; /* iPhoneでマイクを止めた直後は出力が切り替わるまで約1秒無音（playToneと同じ待ち） */ midis.forEach((m, i) => setTimeout(() => playTone(midiToHz(m), gap / 1000 * 0.92, true), d + i * gap)); return d + midis.length * gap; }
+/* 9/22 夜 みかさん「フレーズの音がわずかに途切れながら移行している。途切れなく移行できますか？」
+   → 音ごとに音源を作り直すのをやめ、1つの音源で高さだけを段階的に切り替える（レガート）。音量は最初に上げて最後に下げるだけ。切り替えは 25ms で滑らかに */
+function playSeq(midis, gap) {
+  stopTone(); const ctx = ensureCtx();
+  const total = midis.length * gap / 1000;
+  const delay = pauseMicFor(1000 + midis.length * gap + 300) ? 1.0 : 0;   /* iPhoneでマイクを止めた直後は出力が切り替わるまで約1秒無音（playToneと同じ待ち） */
+  if (delay) { ctx.resume().catch(() => {}); setTimeout(() => { if (ctx.state !== 'running') ctx.resume().catch(() => {}); }, 200); }
+  if (IOS && !toneUnlocked) unlockToneAudio();
+  const t0 = ctx.currentTime + delay, hz0 = midiToHz(midis[0]), hzMax = Math.max(...midis.map(midiToHz));
+  const osc = ctx.createOscillator(); osc.type = 'sawtooth'; osc.frequency.setValueAtTime(hz0, t0);
+  midis.forEach((m, i) => { if (i) osc.frequency.setTargetAtTime(midiToHz(m), t0 + i * gap / 1000, 0.012); });
+  const vib = ctx.createOscillator(); vib.frequency.value = 5.2; const vibG = ctx.createGain(); vibG.gain.value = hz0 * 0.006; vib.connect(vibG); vibG.connect(osc.frequency);
+  const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = Math.min(hzMax * 3.2, 2200); lp.Q.value = 0.9;
+  const f1 = ctx.createBiquadFilter(); f1.type = 'peaking'; f1.frequency.value = 350; f1.Q.value = 3; f1.gain.value = 8;
+  const vol = delay ? 1.8 : 0.8;
+  const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(vol, t0 + 0.08); g.gain.setValueAtTime(vol, t0 + total - 0.12); g.gain.exponentialRampToValueAtTime(0.0001, t0 + total);
+  const comp = ctx.createDynamicsCompressor(); comp.threshold.value = -18; comp.knee.value = 12; comp.ratio.value = 6; comp.attack.value = 0.003; comp.release.value = 0.2;
+  osc.connect(lp); lp.connect(f1); f1.connect(g); g.connect(comp); comp.connect(ctx.destination); osc.start(t0); vib.start(t0); osc.stop(t0 + total); vib.stop(t0 + total);
+  toneNodes = { osc, vib }; mic.muteUntil = performance.now() + (delay + total) * 1000 + 250;
+  return delay * 1000 + midis.length * gap;
+}
 
 /* ---------- 共通 ---------- */
 window.addEventListener('error', e => { try { toast('エラー: ' + String(e.message || e).slice(0, 90)); } catch (x) {} });
@@ -578,7 +598,7 @@ function pushSample(t, c) { tr.samples.push({ t, c }); while (tr.samples.length 
 function cTick(hz) {
   if (!pr.armed) {   // 「🎤 歌う」を押すまでは測らない（9/22 夕・出遅れて次の音の枠で弾かれるのを防ぐ）
     const t = performance.now(), w = document.getElementById('pc-word'), now = document.getElementById('pc-now');
-    w.className = 'word'; w.textContent = t < mic.muteUntil ? '🔈 お手本を聞いて…' : '🎤 歌うを押して開始'; now.textContent = ' ';
+    w.className = 'word'; w.textContent = t < mic.muteUntil ? '🔈 お手本を聞いて…' : '判定スタートを押してね'; now.textContent = ' ';
     if (seqMode()) drawPhrase(t); else { pr.okSince = 0; pr.smooth = null; pushSample(t, null); drawTrace(t, null, 0); }
     return;
   }
@@ -727,7 +747,7 @@ function finishC() {
 }
 document.getElementById('btn-replay').addEventListener('click', () => { ensureCtx(); cueTarget(); });
 /* 🎤 歌う（9/22 夕）: 押した瞬間から判定。単音は最初の音だけ押せば、合った後は自動で次へ。フレーズは1回歌うごとに押す */
-function renderSing() { const b = document.getElementById('btn-sing'); if (!b) return; b.classList.toggle('armed', !!pr.armed); b.textContent = pr.armed ? '🎤 判定中' : '🎤 歌う'; }
+function renderSing() { const b = document.getElementById('btn-sing'); if (!b) return; b.classList.toggle('armed', !!pr.armed); b.textContent = pr.armed ? '● 判定中' : '▶ 判定スタート'; }   // 9/22 みかさん「歌うじゃなく、判定スタート」
 document.getElementById('btn-sing').addEventListener('click', () => {
   ensureCtx(); if (!pr.active) return;
   pr.armed = true; pr.okSince = 0; pr.smooth = null; tr.samples.length = 0; tr.first = []; tr.voicedT = 0;
