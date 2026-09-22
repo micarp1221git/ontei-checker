@@ -39,7 +39,9 @@ h2{font-size:22px;margin:4px 0 6px;line-height:1.4}
 .notes{display:flex;gap:8px;justify-content:center;margin:8px 0 4px}
 .notes span{width:44px;height:44px;border-radius:50%;border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--sub);background:#fff;font-size:17px}
 .notes span.two{font-size:12px;letter-spacing:-.04em}
-.notes span.cur{border-color:var(--accent);color:var(--accent);box-shadow:0 0 0 3px rgba(31,111,115,.15)}
+.notes span.cur{border-color:var(--accent);color:var(--accent);box-shadow:0 0 0 3px rgba(31,111,115,.15);transform:scale(1.15)}
+.notes span.play{background:var(--ink);border-color:var(--ink);color:#fff;transform:scale(1.15)}
+.notes span{transition:transform .15s,background .15s}
 .result{list-style:none;padding:0;margin:6px 0}.result li{display:grid;grid-template-columns:2.6em 1fr 4.2em 3.4em;gap:0 8px;align-items:baseline;padding:5px 0;border-bottom:1px solid var(--line);font-size:15px}
 .result li.head{color:var(--sub);font-size:12px;border-bottom:0;padding-bottom:0}.result li b{font-size:17px}.result li .r{text-align:right;color:var(--sub);font-variant-numeric:tabular-nums}.result li .a.hit{color:var(--ok);font-weight:700}
 .notes span.done{background:var(--ok);border-color:var(--ok);color:#fff}
@@ -469,7 +471,7 @@ function goStage(n, lv) {
   if (n === 3) { renderPad(); show('pm'); return; }
   buildTargets(L ? L[pr.level].seq : STAGES[n].seq); renderB(); show('pb');
 }
-function stopStage() { pr.active = false; offPitch(cTick); clearInterval(pr.replayTimer); stopTone(); }
+function stopStage() { pr.active = false; offPitch(cTick); clearInterval(pr.replayTimer); clearTimeout(pr.cueRestore); stopTone(); }
 function curLevel() { const L = levelsOf(pr.stage); return L ? L[pr.level] : STAGES[pr.stage]; }
 function stageLabel() { const L = levelsOf(pr.stage); return `ステージ${pr.stage} ${STAGES[pr.stage].name}` + (L ? ` ${pr.level + 1}「${L[pr.level].name}」` : ''); }
 /* 次の一手: 同じステージに次の段があればそこへ、無ければ次のステージへ */
@@ -518,7 +520,16 @@ async function startC() {
 /* 9/22 みかさん「ドレミファソ以後は5つの音を一気に鳴らして、一気に歌って判定」→ 2音以上は「一気モード」: お手本を全部つづけて鳴らし、つづけて歌う。合うたびに次の音へ進み、お手本は鳴らし直さない */
 function seqMode() { return pr.targets.length > 1; }
 function seqGap() { return pr.stage === 3 ? 450 : 700; }
-function cueTarget(chime) { if (seqMode()) { playSeq(pr.targets, seqGap()); return; } playTone(midiToHz(pr.targets[pr.idx]), CONFIG.toneSec, false, chime); }
+function cueTarget(chime) {
+  if (seqMode()) {   // お手本が鳴っている間、音の丸を順に光らせる（聞く画面と同じ見せ方）
+    const gap = seqGap(), total = playSeq(pr.targets, gap), d = total - pr.targets.length * gap;
+    clearTimeout(pr.cueRestore);
+    pr.targets.forEach((_, i) => setTimeout(() => { if (!pr.active) return; document.querySelectorAll('#pc-notes span').forEach((sp, j) => sp.classList.toggle('play', j === i)); }, d + i * gap));
+    pr.cueRestore = setTimeout(() => { document.querySelectorAll('#pc-notes span').forEach(sp => sp.classList.remove('play')); }, total + 50);
+    return;
+  }
+  playTone(midiToHz(pr.targets[pr.idx]), CONFIG.toneSec, false, chime);
+}
 function renderC() {
   const m = pr.targets[pr.idx], d = pr.degrees[pr.idx], name = degJP(d);
   const big = document.getElementById('pc-target'); big.textContent = name; const abs = document.createElement('span'); abs.className = 'abs'; abs.textContent = noteEN(m); big.appendChild(abs);
