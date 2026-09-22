@@ -41,11 +41,12 @@ h2{font-size:22px;margin:4px 0 6px;line-height:1.4}
 .notes span.two{font-size:12px;letter-spacing:-.04em}
 .notes span.cur{border-color:var(--accent);color:var(--accent);box-shadow:0 0 0 3px rgba(31,111,115,.15);transform:scale(1.15)}
 .notes span.play{background:var(--ink);border-color:var(--ink);color:#fff;transform:scale(1.15)}
+.notes span.miss{border-color:var(--far);color:var(--far)}
 .notes span{transition:transform .15s,background .15s}
 .result{list-style:none;padding:0;margin:6px 0}.result li{display:grid;grid-template-columns:2.6em 1fr 4.2em 3.4em;gap:0 8px;align-items:baseline;padding:5px 0;border-bottom:1px solid var(--line);font-size:15px}
 .result li.head{color:var(--sub);font-size:12px;border-bottom:0;padding-bottom:0}.result li b{font-size:17px}.result li .r{text-align:right;color:var(--sub);font-variant-numeric:tabular-nums}.result li .a.hit{color:var(--ok);font-weight:700}
 .notes span.done{background:var(--ok);border-color:var(--ok);color:#fff}
-.trace{position:relative;height:260px;margin:10px auto 6px;width:100%;max-width:360px}
+.trace{position:relative;height:230px;margin:10px auto 6px;width:100%;max-width:360px}
 .trace canvas{width:100%;height:100%;display:block;border-radius:12px;background:#fff;border:1px solid var(--line)}
 .trace .lab{position:absolute;left:10px;font-size:12px;color:var(--sub)}
 .trace .lab.t{top:6px}.trace .lab.b{bottom:6px}
@@ -164,9 +165,8 @@ details{margin-top:8px}summary{color:var(--sub);font-size:14px;cursor:pointer}
     <div class="prog"><i id="pc-prog"></i></div>
     <h2 id="pc-title">聞こえた音と同じ高さで「あー」</h2>
     <div class="notes" id="pc-notes"></div>
-    <div class="big" id="pc-target">ド</div>
-    <div class="center small" id="pc-sub">お手本が鳴ったら、同じ高さで声をのばします。お手本は5秒ごとに鳴ります</div>
-    <div class="row" style="margin:8px 0 6px"><button class="btn sec" id="btn-replay">🔈 もう一度お手本</button><button class="btn ghost" id="btn-stop">やめる</button></div>
+    <div class="big" id="pc-target" hidden>ド</div>
+    <!-- 9/22 みかさん「グラフがスクロールしないと見えない・もう一度お手本ボタンが見えない」→ グラフを上へ、ボタンをその直下に -->
     <div class="trace">
       <div class="tone" id="pc-tone">🔈 お手本</div>
       <span class="lab t">高い</span><span class="lab b">低い</span>
@@ -174,6 +174,8 @@ details{margin-top:8px}summary{color:var(--sub);font-size:14px;cursor:pointer}
     </div>
     <div class="word" id="pc-word">&nbsp;</div>
     <div class="sub" id="pc-now">&nbsp;</div>
+    <div class="row" style="margin:6px 0 4px"><button class="btn" id="btn-replay">🔈 もう一度お手本</button><button class="btn ghost" id="btn-stop" style="flex:0 0 auto">やめる</button></div>
+    <div class="center small" id="pc-sub">お手本が鳴ったら、同じ高さで声をのばします。お手本は5秒ごとに鳴ります</div>
     <div class="lvl"><i></i></div><div class="lvl-txt"></div>
     <div class="center" style="margin-top:6px"><button class="btn ghost" id="btn-simul" style="flex:0 0 auto;padding:6px 14px;font-size:13px"></button></div>
   </div>
@@ -242,7 +244,7 @@ details{margin-top:8px}summary{color:var(--sub);font-size:14px;cursor:pointer}
 
 <script>
 /* ==========================================================
-   音程チェッカー v0.9（2026-09-22朝）— 保持0.5秒・2音以上は一気モード（お手本つづけて→つづけて歌う）／v0.8=ステージ2を3段・合格の幅3段階／v0.7（2026-09-21夜）— 軌跡・保持ゲージ・入り方の分析・星3段階・連続日数（みかさん「可視化から発生の改善へ」）。v0.6=すごろく 単音→音階→メロディ
+   音程チェッカー v1.0（2026-09-22昼）— 2音以上はフレーズモード（お手本1音1.3秒→つづけて歌う→歌い終わりにまとめて判定・階段グラフ）／v0.9=保持0.5秒／v0.8=ステージ2を3段・合格の幅3段階／v0.7（2026-09-21夜）— 軌跡・保持ゲージ・入り方の分析・星3段階・連続日数（みかさん「可視化から発生の改善へ」）。v0.6=すごろく 単音→音階→メロディ
    ピッチ検出は「声の育成日記」の framePitchACF（自己相関法）を流用。端末内で完結。
    ========================================================== */
 const IOS = /iPhone|iPad|iPod/.test(navigator.userAgent);   // 9/21 12周目: 定義より前で使っていて読み込み時に落ち、全ボタンが死んでいた → 先頭へ
@@ -471,7 +473,7 @@ function goStage(n, lv) {
   if (n === 3) { renderPad(); show('pm'); return; }
   buildTargets(L ? L[pr.level].seq : STAGES[n].seq); renderB(); show('pb');
 }
-function stopStage() { pr.active = false; offPitch(cTick); clearInterval(pr.replayTimer); clearTimeout(pr.cueRestore); stopTone(); }
+function stopStage() { pr.active = false; offPitch(cTick); clearInterval(pr.replayTimer); clearTimeout(pr.cueRestore); stopTone(); phraseReset(); }
 function curLevel() { const L = levelsOf(pr.stage); return L ? L[pr.level] : STAGES[pr.stage]; }
 function stageLabel() { const L = levelsOf(pr.stage); return `ステージ${pr.stage} ${STAGES[pr.stage].name}` + (L ? ` ${pr.level + 1}「${L[pr.level].name}」` : ''); }
 /* 次の一手: 同じステージに次の段があればそこへ、無ければ次のステージへ */
@@ -513,19 +515,19 @@ document.getElementById('btn-b-next').addEventListener('click', () => startC());
 function buildTargets(degrees) { pr.degrees = degrees.slice(); pr.targets = degrees.map(d => store.startMidi + d); pr.idx = 0; pr.results = []; }
 async function startC() {
   ensureCtx(); if (!(await micStart())) return;
-  show('pc'); document.getElementById('pc-step').textContent = stageLabel(); pr.active = true; pr.okSince = 0; pr.smooth = null; tr.samples.length = 0; renderC(); onPitch(cTick);
+  show('pc'); document.getElementById('pc-step').textContent = stageLabel(); pr.active = true; pr.okSince = 0; pr.smooth = null; pr.tries = 0; tr.samples.length = 0; phraseReset(); renderC(); onPitch(cTick);
   cueTarget(); clearInterval(pr.replayTimer); if (!IOS && !seqMode()) pr.replayTimer = setInterval(() => { if (pr.active) cueTarget(); }, CONFIG.replayMs);   // 一気モードは自動で鳴らし直さない（歌っている途中で割り込むため）
-  document.getElementById('pc-sub').textContent = seqMode() ? `お手本が${pr.targets.length}音つづけて鳴ったら、同じようにつづけて歌います。合った音から順に進みます` : (IOS ? 'お手本が鳴ったら、同じ高さで声をのばします。もう一度聞きたいときは「🔈 もう一度お手本」' : 'お手本が鳴ったら、同じ高さで声をのばします。お手本は5秒ごとに鳴ります');
+  document.getElementById('pc-sub').textContent = seqMode() ? `お手本が鳴り終わったら、同じようにつづけて歌います。歌い終わると、まとめて判定します` : (IOS ? 'お手本が鳴ったら、同じ高さで声をのばします。もう一度聞きたいときは「🔈 もう一度お手本」' : 'お手本が鳴ったら、同じ高さで声をのばします。お手本は5秒ごとに鳴ります');
 }
 /* 9/22 みかさん「ドレミファソ以後は5つの音を一気に鳴らして、一気に歌って判定」→ 2音以上は「一気モード」: お手本を全部つづけて鳴らし、つづけて歌う。合うたびに次の音へ進み、お手本は鳴らし直さない */
 function seqMode() { return pr.targets.length > 1; }
-function seqGap() { return pr.stage === 3 ? 450 : 700; }
+function seqGap() { return Math.round(CONFIG.toneSec * 1000 + 120); }   // 9/22 みかさん「お手本はさっきと同じ長さ」→ 1音1.3秒（短くしたのは人の判定だけ）
 function cueTarget(chime) {
   if (seqMode()) {   // お手本が鳴っている間、音の丸を順に光らせる（聞く画面と同じ見せ方）
-    const gap = seqGap(), total = playSeq(pr.targets, gap), d = total - pr.targets.length * gap;
+    phraseReset(); const gap = seqGap(), total = playSeq(pr.targets, gap), d = total - pr.targets.length * gap;
     clearTimeout(pr.cueRestore);
-    pr.targets.forEach((_, i) => setTimeout(() => { if (!pr.active) return; document.querySelectorAll('#pc-notes span').forEach((sp, j) => sp.classList.toggle('play', j === i)); }, d + i * gap));
-    pr.cueRestore = setTimeout(() => { document.querySelectorAll('#pc-notes span').forEach(sp => sp.classList.remove('play')); }, total + 50);
+    pr.targets.forEach((_, i) => setTimeout(() => { if (!pr.active) return; ph.cueSlot = i; document.querySelectorAll('#pc-notes span').forEach((sp, j) => sp.classList.toggle('play', j === i)); }, d + i * gap));
+    pr.cueRestore = setTimeout(() => { ph.cueSlot = -1; document.querySelectorAll('#pc-notes span').forEach(sp => sp.classList.remove('play')); }, total + 50);
     return;
   }
   playTone(midiToHz(pr.targets[pr.idx]), CONFIG.toneSec, false, chime);
@@ -533,9 +535,9 @@ function cueTarget(chime) {
 function renderC() {
   const m = pr.targets[pr.idx], d = pr.degrees[pr.idx], name = degJP(d);
   const big = document.getElementById('pc-target'); big.textContent = name; const abs = document.createElement('span'); abs.className = 'abs'; abs.textContent = noteEN(m); big.appendChild(abs);
-  document.getElementById('pc-title').textContent = pr.targets.length === 1 ? `「${name}」と同じ高さで「あー」` : pr.idx === 0 ? `${pr.targets.length}音中 1音目「${name}」。同じ高さで「あー」` : `${pr.targets.length}音中 ${pr.idx + 1}音目「${name}」`;
-  document.getElementById('pc-prog').style.width = (pr.idx / pr.targets.length * 100) + '%';
-  const n = document.getElementById('pc-notes'); n.innerHTML = ''; pr.degrees.forEach((dd, i) => { const s = document.createElement('span'); s.textContent = degJP(dd); s.className = (i < pr.idx ? 'done' : i === pr.idx ? 'cur' : '') + (degJP(dd).length > 1 ? ' two' : ''); n.appendChild(s); });
+  document.getElementById('pc-title').textContent = pr.targets.length === 1 ? `「${name}」と同じ高さで「あー」` : `「${pr.degrees.map(degJP).join('')}」と、つづけて歌います`;
+  document.getElementById('pc-prog').style.width = (seqMode() ? 0 : pr.idx / pr.targets.length * 100) + '%';
+  const n = document.getElementById('pc-notes'); n.innerHTML = ''; pr.degrees.forEach((dd, i) => { const s = document.createElement('span'); s.textContent = degJP(dd); s.className = (seqMode() ? '' : i < pr.idx ? 'done' : i === pr.idx ? 'cur' : '') + (degJP(dd).length > 1 ? ' two' : ''); n.appendChild(s); });
   tr.noteT0 = performance.now(); tr.first = []; tr.voicedT = 0;
 }
 
@@ -558,6 +560,7 @@ function drawTrace(nowT, cur, holdFrac) {
   ctx.fillStyle = 'rgba(217,154,30,.10)'; ctx.fillRect(0, n1, w, n2 - n1);
   ctx.fillStyle = 'rgba(46,139,87,.20)'; ctx.fillRect(0, y1, w, y2 - y1);
   ctx.strokeStyle = '#2E8B57'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(0, h / 2); ctx.lineTo(w, h / 2); ctx.stroke();
+  ctx.fillStyle = '#2E8B57'; ctx.font = 'bold 20px -apple-system, "Hiragino Sans", sans-serif'; ctx.textAlign = 'left'; ctx.fillText(degJP(pr.degrees[pr.idx]), 12, h / 2 - 10);
   const x0 = w * LEAD, pxPerMs = x0 / TRACE_MS;
   ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; let prev = null;
   for (const s of tr.samples) { if (s.c === null) { prev = null; continue; } const x = x0 - (nowT - s.t) * pxPerMs; if (x < 0) { prev = null; continue; } const y = yOf(s.c); if (prev) { ctx.strokeStyle = colorOf(s.c); ctx.beginPath(); ctx.moveTo(prev.x, prev.y); ctx.lineTo(x, y); ctx.stroke(); } prev = { x, y }; }
@@ -569,6 +572,7 @@ function drawTrace(nowT, cur, holdFrac) {
 function pushSample(t, c) { tr.samples.push({ t, c }); while (tr.samples.length && t - tr.samples[0].t > TRACE_MS + 500) tr.samples.shift(); }
 
 function cTick(hz) {
+  if (seqMode()) { phraseTick(hz, performance.now()); return; }
   const w = document.getElementById('pc-word'), now = document.getElementById('pc-now'), t = performance.now();
   if (!hz) { pr.smooth = null; w.className = 'word'; w.textContent = t < mic.muteUntil ? '🔈 お手本を聞いて…' : '声を出してみましょう'; now.textContent = ' '; pr.okSince = 0; pushSample(t, null); drawTrace(t, null, 0); return; }
   const target = pr.targets[pr.idx]; const mf = hzToMidiF(hz);
@@ -583,6 +587,85 @@ function cTick(hz) {
   pushSample(t, pr.smooth); drawTrace(t, pr.smooth, pr.okSince ? Math.min(1, (t - pr.okSince) / CONFIG.holdMs) : 0);
   if (pr.okSince && t - pr.okSince >= CONFIG.holdMs) gotNote(target, octs);
 }
+/* ==========================================================
+   フレーズモード（9/22 みかさん「ドレミファソをひとフレーズとして音程チェックしたい」）
+   お手本（1音1.3秒）→ つづけて歌う → 歌い終わり（0.9秒の無音）でまとめて判定。
+   グラフ＝階段: 各音の段（緑の帯）が左から並び、歌った線が左→右へ乗っていく。合わなかった音は「低い／高い／抜けた」で返して、お手本からやり直す
+   ========================================================== */
+const ph = { t0: 0, samples: [], lastVoiced: 0, voicedMs: 0, oct: 0, result: null, cueSlot: -1, lastT: 0 };
+function phraseReset() { ph.t0 = 0; ph.samples.length = 0; ph.lastVoiced = 0; ph.voicedMs = 0; ph.oct = 0; ph.result = null; ph.cueSlot = -1; }
+function phraseSlotMs() { return seqGap(); }
+function foldCents(mf, target) { let d = (mf - target) * 100; if (Math.abs(d) > 600) { const f = d - Math.round(d / 1200) * 1200; if (Math.abs(f) <= 250) d = f; } return d; }
+function nearestCents(mf) { let best = 1e9, bi = 0; pr.targets.forEach((tg, i) => { const d = foldCents(mf, tg); if (Math.abs(d) < Math.abs(best)) { best = d; bi = i; } }); return [best, bi]; }
+function phraseTick(hz, t) {
+  const w = document.getElementById('pc-word'), now = document.getElementById('pc-now'), dt = ph.lastT ? Math.min(t - ph.lastT, 100) : 16; ph.lastT = t;
+  if (ph.result) { drawPhrase(t); return; }
+  if (t < mic.muteUntil) { w.className = 'word'; w.textContent = '🔈 お手本を聞いて…'; now.textContent = ' '; drawPhrase(t); return; }
+  if (hz) {
+    const mf = hzToMidiF(hz);
+    if (!ph.t0) { ph.t0 = t; ph.oct = Math.round((mf - pr.targets[0]) / 12) * 12; }   // 出だしでオクターブ（男声・女声）を合わせる
+    ph.samples.push({ t, m: mf - ph.oct }); ph.lastVoiced = t; ph.voicedMs += dt;
+    const [c, i] = nearestCents(mf - ph.oct); const [k] = levelWord(c);
+    w.className = 'word ' + k; w.textContent = `いま「${degJP(pr.degrees[i])}」のあたり`; now.textContent = 'つづけて歌います…';
+  } else {
+    if (!ph.t0) { w.className = 'word'; w.textContent = 'つづけて歌ってみましょう'; now.textContent = `「${pr.degrees.map(degJP).join('')}」`; }
+    else if (t - ph.lastVoiced > 900 && ph.voicedMs >= 700) { evaluatePhrase(); }
+  }
+  if (ph.t0 && !ph.result && t - ph.t0 > pr.targets.length * phraseSlotMs() * 2.5) evaluatePhrase();
+  drawPhrase(t);
+}
+function phraseSegments() {
+  const segs = []; let cur = null;
+  for (const s of ph.samples) {
+    if (cur && Math.abs(s.m - cur.mean) <= 0.6) { cur.vals.push(s.m); cur.end = s.t; cur.mean = cur.vals.reduce((a, b) => a + b, 0) / cur.vals.length; }
+    else { if (cur) segs.push(cur); cur = { start: s.t, end: s.t, vals: [s.m], mean: s.m }; }
+  }
+  if (cur) segs.push(cur);
+  return segs.filter(g => g.end - g.start >= 180);   // 0.18秒未満は通り道
+}
+function evaluatePhrase() {
+  const segs = phraseSegments(); let si = 0; const per = [];
+  pr.targets.forEach((tg, i) => {
+    let hit = null;
+    for (let j = si; j < segs.length; j++) { const d = foldCents(segs[j].mean, tg); if (Math.abs(d) <= 250) { hit = { seg: segs[j], cents: d }; si = j + 1; break; } }
+    if (hit) { const v = hit.seg.vals, mean = hit.seg.mean, wob = Math.sqrt(v.reduce((a, b) => a + (b - mean) * (b - mean), 0) / v.length) * 100; per.push({ deg: pr.degrees[i], m: tg, cents: hit.cents, ok: Math.abs(hit.cents) <= CONFIG.okCents, wobble: wob, seg: hit.seg }); }
+    else per.push({ deg: pr.degrees[i], m: tg, cents: null, ok: false, wobble: 0, seg: null });
+  });
+  const pass = per.every(x => x.ok); ph.result = { per, pass };
+  const w = document.getElementById('pc-word'), now = document.getElementById('pc-now');
+  if (pass) {
+    pr.results = per.map(x => ({ m: x.m, deg: x.deg, octs: ph.oct / 12, cents: x.cents, wobble: x.wobble, approach: 'hit', lockSec: 0, phrase: true }));
+    document.querySelectorAll('#pc-notes span').forEach(sp => { sp.classList.add('done', 'hit'); });
+    w.className = 'word ok'; w.textContent = 'ぜんぶ合った！'; now.textContent = ' '; document.getElementById('pc-prog').style.width = '100%';
+    setTimeout(finishC, 900);
+  } else {
+    pr.tries++;
+    const miss = per.filter(x => !x.ok).map(x => degJP(x.deg) + (x.cents === null ? 'が抜けた' : x.cents < 0 ? 'が低い' : 'が高い'));
+    w.className = 'word far'; w.textContent = miss.slice(0, 3).join('・'); now.textContent = 'もう一度お手本のあとに、歌ってみましょう';
+    document.querySelectorAll('#pc-notes span').forEach((sp, i) => sp.classList.toggle('miss', !per[i].ok));
+    setTimeout(() => { if (pr.active && seqMode()) cueTarget(); }, 2200);
+  }
+}
+function drawPhrase(nowT) {
+  const ctx = traceCtx(); if (!ctx) return; const w = tr.w, h = tr.h; ctx.clearRect(0, 0, w, h);
+  const n = pr.targets.length, lo = Math.min(...pr.targets) - 2.5, hi = Math.max(...pr.targets) + 2.5, top = 22, bot = 16;
+  const yM = m => top + (h - top - bot) * (1 - (m - lo) / (hi - lo)); const slotW = w / n; const ok = CONFIG.okCents / 100, near = CONFIG.nearCents / 100;
+  pr.targets.forEach((tg, i) => {
+    const x = i * slotW, res = ph.result ? ph.result.per[i] : null;
+    ctx.fillStyle = 'rgba(217,154,30,.08)'; ctx.fillRect(x + 2, yM(tg + near), slotW - 4, yM(tg - near) - yM(tg + near));
+    ctx.fillStyle = ph.cueSlot === i ? 'rgba(31,42,43,.35)' : res ? (res.ok ? 'rgba(46,139,87,.28)' : 'rgba(192,80,77,.18)') : 'rgba(46,139,87,.18)'; ctx.fillRect(x + 2, yM(tg + ok), slotW - 4, yM(tg - ok) - yM(tg + ok));
+    ctx.strokeStyle = res && !res.ok ? '#C0504D' : '#2E8B57'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x + 2, yM(tg)); ctx.lineTo(x + slotW - 2, yM(tg)); ctx.stroke();
+    ctx.fillStyle = res && !res.ok ? '#C0504D' : '#2E8B57'; ctx.font = 'bold 15px -apple-system, "Hiragino Sans", sans-serif'; ctx.textAlign = 'center'; ctx.fillText(degJP(pr.degrees[i]), x + slotW / 2, yM(tg) - 7);
+    if (res && !res.ok && res.cents === null) { ctx.font = 'bold 22px -apple-system, sans-serif'; ctx.fillText('?', x + slotW / 2, yM(tg) + 26); }
+  });
+  if (!ph.t0) return;
+  const span = n * phraseSlotMs() / 0.92, xOf = t => Math.min(w - 4, (t - ph.t0) / span * w);
+  ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; let prev = null;
+  for (const s of ph.samples) { const x = xOf(s.t), y = yM(s.m); if (prev && s.t - prev.t < 120) { ctx.strokeStyle = colorOf(nearestCents(s.m)[0]); ctx.beginPath(); ctx.moveTo(prev.x, prev.y); ctx.lineTo(x, y); ctx.stroke(); } prev = { x, y, t: s.t }; }
+  if (prev && !ph.result) { ctx.fillStyle = colorOf(nearestCents(ph.samples[ph.samples.length - 1].m)[0]); ctx.beginPath(); ctx.arc(prev.x, prev.y, 12, 0, Math.PI * 2); ctx.fill(); }
+  if (ph.result) ph.result.per.forEach((res, i) => { if (!res.seg) return; ctx.strokeStyle = res.ok ? '#2E8B57' : '#C0504D'; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(xOf(res.seg.start), yM(res.seg.mean)); ctx.lineTo(xOf(res.seg.end), yM(res.seg.mean)); ctx.stroke(); });
+}
+
 function noteStats(t) {
   const hold = tr.samples.filter(s => s.c !== null && t - s.t <= CONFIG.holdMs).map(s => s.c);
   const mean = hold.length ? hold.reduce((a, b) => a + b, 0) / hold.length : 0;
@@ -602,6 +685,7 @@ function gotNote(target, octs) {
 const APPROACH_JP = { hit: '✨ 一発', up: '↗ 下から', down: '↘ 上から' };
 function starsFor(results) {
   const avg = results.reduce((a, r) => a + Math.abs(r.cents), 0) / results.length;
+  if (results[0] && results[0].phrase) return 1 + (avg <= 15 ? 1 : 0) + (pr.tries === 0 ? 1 : 0);   // フレーズ: ★=クリア ／ ★★=平均15セント以内 ／ ★★★=1回で
   const hit = results.filter(r => r.approach === 'hit').length / results.length;
   return 1 + (avg <= 15 ? 1 : 0) + (hit >= 0.5 ? 1 : 0);   // ★=クリア ／ ★★=平均15セント以内 ／ ★★★=半分以上が一発
 }
@@ -619,8 +703,8 @@ function finishC() {
   pr.active = false; offPitch(cTick); clearInterval(pr.replayTimer); playFanfare();
   const list = document.getElementById('pd-list'); list.innerHTML = '';
   const row = (cells, cls) => { const li = document.createElement('li'); if (cls) li.className = cls; cells.forEach(([txt, c]) => { const sp = document.createElement(c === 'b' ? 'b' : 'span'); if (c && c !== 'b') sp.className = c; sp.textContent = txt; li.appendChild(sp); }); list.appendChild(li); };
-  row([['音'], ['入り方'], ['揺れ', 'r'], ['秒', 'r']], 'head');
-  pr.results.forEach(r => row([[degJP(r.deg), 'b'], [APPROACH_JP[r.approach], 'a ' + r.approach], [`±${r.wobble.toFixed(0)}`, 'r'], [r.lockSec.toFixed(1), 'r']]));
+  row([['音'], [pr.results[0] && pr.results[0].phrase ? '高さ' : '入り方'], ['揺れ', 'r'], [pr.results[0] && pr.results[0].phrase ? '回数' : '秒', 'r']], 'head');
+  pr.results.forEach(r => row([[degJP(r.deg), 'b'], [r.phrase ? (Math.abs(r.cents) <= 10 ? '✨ ど真ん中' : r.cents > 0 ? 'ほんの少し高め' : 'ほんの少し低め') : APPROACH_JP[r.approach], 'a ' + (r.phrase ? (Math.abs(r.cents) <= 10 ? 'hit' : 'x') : r.approach)], [`±${r.wobble.toFixed(0)}`, 'r'], [r.phrase ? (pr.tries === 0 ? '1回で' : `${pr.tries + 1}回目`) : r.lockSec.toFixed(1), 'r']]));
   const avg = pr.results.reduce((a, r) => a + r.cents, 0) / pr.results.length;
   const stars = starsFor(pr.results), sk = starKey(pr.stage, pr.level); store.stars[sk] = Math.max(+store.stars[sk] || 0, stars); save(); renderStages(); markDay();
   const sp = document.querySelectorAll('#pd-stars span'); sp.forEach((s, i) => { s.className = ''; void s.offsetWidth; if (i < stars) { s.className = 'on'; s.style.animationDelay = (0.15 + i * 0.25) + 's'; } });
@@ -699,7 +783,7 @@ renderStreak();
 if (store.startMidi) { document.getElementById('pa-h2').textContent = 'きょうも、はじめましょう'; document.getElementById('pa-lead').textContent = `ドレミの高さは前回のまま（${noteJP(store.startMidi)}${noteEN(store.startMidi)} から）。変えたいときは「録り直す」。`; document.getElementById('pa-msg').textContent = ' '; document.getElementById('pa-next').hidden = false; document.getElementById('btn-a-next').textContent = '▶ はじめる'; document.getElementById('btn-voice').parentElement.hidden = true; document.getElementById('pa-redo').hidden = false; }
 function isNativeApp() { return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()); }
 if ('serviceWorker' in navigator && !isNativeApp()) { navigator.serviceWorker.register('./sw.js').catch(() => {}); }
-window.__ontei = { framePitchACF, hzToMidiF, noteJP, noteEN, degJP, store, pr, tr, buildTargets, startC, show, goStage, STAGES, starsFor, coachText, noteStats, drawTrace, renderC, finishC };
+window.__ontei = { framePitchACF, hzToMidiF, noteJP, noteEN, degJP, store, pr, tr, ph, phraseTick, evaluatePhrase, drawPhrase, phraseReset, buildTargets, startC, show, goStage, STAGES, starsFor, coachText, noteStats, drawTrace, renderC, finishC };
 </script>
 </body>
 </html>
