@@ -155,7 +155,7 @@ details{margin-top:8px}summary{color:var(--sub);font-size:14px;cursor:pointer}
   <div class="card" id="pm" hidden>
     <div class="step">ステージ3 メロディ</div>
     <h2>メロディを選ぶ・作る</h2>
-    <div class="presets"><button data-m="0,2,4,5,4,2,0/4,5,7,9,7,5,4/0,0,0,0/0,0,2,2,4,4,5,5,4,2,0">かえるのうた</button><button data-m="0,0,7,7,9,9,7/5,5,4,4,2,2,0/7,7,5,5,4,4,2/7,7,5,5,4,4,2/0,0,7,7,9,9,7/5,5,4,4,2,2,0">きらきら星</button><button data-m="4,2,0,2,4,4,4/2,2,2/4,7,7/4,2,0,2,4,4,4,4/2,2,4,2,0">メリーさんのひつじ</button></div>
+    <div class="presets"><button data-m="0,2,4,5,4,2,0:2/4,5,7,9,7,5,4:2/0,0,0,0/0:.5,0:.5,2:.5,2:.5,4:.5,4:.5,5:.5,5:.5,4,2,0:2">かえるのうた</button><button data-m="0,0,7,7,9,9,7:2/5,5,4,4,2,2,0:2/7,7,5,5,4,4,2:2/7,7,5,5,4,4,2:2/0,0,7,7,9,9,7:2/5,5,4,4,2,2,0:2">きらきら星</button><button data-m="4,2,0,2,4,4,4/2,2,2/4,7,7/4,2,0,2,4,4,4,4/2,2,4,2,0">メリーさんのひつじ</button></div>
     <!-- 9/23 みかさん「かえるの歌も1フレーズしかなくて、1曲通してできない」→ プリセットは曲まるごと（フレーズを / で区切る）。押すと1フレーズ目が下の欄に入り、「1曲通し」ボタンが出る -->
     <div class="row" id="song-row" hidden style="margin-top:8px"><button class="btn" id="btn-song-go">🎵 1曲通し</button></div>
     <p class="hint" style="margin-top:12px">自分で作る（ボタンを押した順に並びます・八分音符・16音まで）</p>
@@ -251,7 +251,7 @@ details{margin-top:8px}summary{color:var(--sub);font-size:14px;cursor:pointer}
 
 <script>
 /* ==========================================================
-   音程チェッカー v1.4（2026-09-23）— 「聞く」画面に⬇⬆1オクターブと「高さを決め直す」／「聞く」と「いっしょにやる」を分ける（聞かなくても進める・練習画面でお手本を勝手に鳴らさない）／結果を「◯／✕ 合わなかった: …」で残す／プリセット3曲を1曲通しで（フレーズごとに合ったら次へ）／v1.3（2026-09-22夜）— ボタン名「判定スタート」・フレーズのお手本を途切れなくつなげて鳴らす（1つの音源で高さだけ切り替える）／v1.2（2026-09-22夕）— 「🎤 歌う」ボタン: 押すまで測らない（出遅れて次の音の枠で弾かれる問題）。お手本と横並び・やめるは下の小ボタンへ／v1.1（2026-09-22夕）— フレーズのお手本を1音0.65秒に（単音1.3秒の半分・16分のイメージ）、人の判定も短く（最短0.12秒・歌い終わり0.7秒）／v1.0（2026-09-22昼）— 2音以上はフレーズモード（お手本1音1.3秒→つづけて歌う→歌い終わりにまとめて判定・階段グラフ）／v0.9=保持0.5秒／v0.8=ステージ2を3段・合格の幅3段階／v0.7（2026-09-21夜）— 軌跡・保持ゲージ・入り方の分析・星3段階・連続日数（みかさん「可視化から発生の改善へ」）。v0.6=すごろく 単音→音階→メロディ
+   音程チェッカー v1.5（2026-09-23 昼）— 同じ高さが続く音（ドドドド）を切れ目で4つに聞こえるように／プリセットに音の長さ（かえるのうた後半の八分音符・各フレーズ終わりの二分音符）／判定も息継ぎで音を数え、伸ばして歌った同音も落とさない（みかさん）／v1.4（2026-09-23）— 「聞く」画面に⬇⬆1オクターブと「高さを決め直す」／「聞く」と「いっしょにやる」を分ける（聞かなくても進める・練習画面でお手本を勝手に鳴らさない）／結果を「◯／✕ 合わなかった: …」で残す／プリセット3曲を1曲通しで（フレーズごとに合ったら次へ）／v1.3（2026-09-22夜）— ボタン名「判定スタート」・フレーズのお手本を途切れなくつなげて鳴らす（1つの音源で高さだけ切り替える）／v1.2（2026-09-22夕）— 「🎤 歌う」ボタン: 押すまで測らない（出遅れて次の音の枠で弾かれる問題）。お手本と横並び・やめるは下の小ボタンへ／v1.1（2026-09-22夕）— フレーズのお手本を1音0.65秒に（単音1.3秒の半分・16分のイメージ）、人の判定も短く（最短0.12秒・歌い終わり0.7秒）／v1.0（2026-09-22昼）— 2音以上はフレーズモード（お手本1音1.3秒→つづけて歌う→歌い終わりにまとめて判定・階段グラフ）／v0.9=保持0.5秒／v0.8=ステージ2を3段・合格の幅3段階／v0.7（2026-09-21夜）— 軌跡・保持ゲージ・入り方の分析・星3段階・連続日数（みかさん「可視化から発生の改善へ」）。v0.6=すごろく 単音→音階→メロディ
    ピッチ検出は「声の育成日記」の framePitchACF（自己相関法）を流用。端末内で完結。
    ========================================================== */
 const IOS = /iPhone|iPad|iPod/.test(navigator.userAgent);   // 9/21 12周目: 定義より前で使っていて読み込み時に落ち、全ボタンが死んでいた → 先頭へ
@@ -412,24 +412,28 @@ function playTone(hz, sec, keepMic, chime) {
 function stopTone() { if (toneNodes) { try { toneNodes.osc.stop(); toneNodes.vib.stop(); } catch (e) {} toneNodes = null; } }
 /* 9/22 夜 みかさん「フレーズの音がわずかに途切れながら移行している。途切れなく移行できますか？」
    → 音ごとに音源を作り直すのをやめ、1つの音源で高さだけを段階的に切り替える（レガート）。音量は最初に上げて最後に下げるだけ。切り替えは 25ms で滑らかに */
-function playSeq(midis, gap) {
+function playSeq(midis, gap, lens) {
   stopTone(); const ctx = ensureCtx();
-  const total = midis.length * gap / 1000;
+  lens = lens && lens.length === midis.length ? lens : midis.map(() => 1);
+  const { offs, total: units } = lenOffsets(lens); const total = units * gap / 1000; const at = i => offs[i] * gap / 1000;
   const delay = pauseMicFor(1000 + midis.length * gap + 300) ? 1.0 : 0;   /* iPhoneでマイクを止めた直後は出力が切り替わるまで約1秒無音（playToneと同じ待ち） */
   if (delay) { ctx.resume().catch(() => {}); setTimeout(() => { if (ctx.state !== 'running') ctx.resume().catch(() => {}); }, 200); }
   if (IOS && !toneUnlocked) unlockToneAudio();
   const t0 = ctx.currentTime + delay, hz0 = midiToHz(midis[0]), hzMax = Math.max(...midis.map(midiToHz));
   const osc = ctx.createOscillator(); osc.type = 'sawtooth'; osc.frequency.setValueAtTime(hz0, t0);
-  midis.forEach((m, i) => { if (i) osc.frequency.setTargetAtTime(midiToHz(m), t0 + i * gap / 1000, 0.012); });
+  midis.forEach((m, i) => { if (i) osc.frequency.setTargetAtTime(midiToHz(m), t0 + at(i), 0.012); });
   const vib = ctx.createOscillator(); vib.frequency.value = 5.2; const vibG = ctx.createGain(); vibG.gain.value = hz0 * 0.006; vib.connect(vibG); vibG.connect(osc.frequency);
   const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = Math.min(hzMax * 3.2, 2200); lp.Q.value = 0.9;
   const f1 = ctx.createBiquadFilter(); f1.type = 'peaking'; f1.frequency.value = 350; f1.Q.value = 3; f1.gain.value = 8;
   const vol = delay ? 1.8 : 0.8;
-  const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(vol, t0 + 0.08); g.gain.setValueAtTime(vol, t0 + total - 0.12); g.gain.exponentialRampToValueAtTime(0.0001, t0 + total);
+  const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(vol, t0 + 0.08);
+  /* 9/23 みかさん「ドドドドが全部つながって聞こえる」→ 同じ高さが続く切れ目だけ、音量を一瞬落として4つに聞こえるようにする（違う高さへの切り替えはレガートのまま） */
+  midis.forEach((m, i) => { if (i && m === midis[i - 1]) { const tb = t0 + at(i); g.gain.setValueAtTime(vol, tb - 0.06); g.gain.exponentialRampToValueAtTime(0.002, tb - 0.005); g.gain.setValueAtTime(0.002, tb + 0.02); g.gain.exponentialRampToValueAtTime(vol, tb + 0.07); } });
+  g.gain.setValueAtTime(vol, t0 + total - 0.12); g.gain.exponentialRampToValueAtTime(0.0001, t0 + total);
   const comp = ctx.createDynamicsCompressor(); comp.threshold.value = -18; comp.knee.value = 12; comp.ratio.value = 6; comp.attack.value = 0.003; comp.release.value = 0.2;
   osc.connect(lp); lp.connect(f1); f1.connect(g); g.connect(comp); comp.connect(ctx.destination); osc.start(t0); vib.start(t0); osc.stop(t0 + total); vib.stop(t0 + total);
   toneNodes = { osc, vib }; mic.muteUntil = performance.now() + (delay + total) * 1000 + 250;
-  return delay * 1000 + midis.length * gap;
+  return delay * 1000 + units * gap;
 }
 
 /* ---------- 共通 ---------- */
@@ -515,7 +519,8 @@ function renderPad() {
 }
 function renderSeq() { const box = document.getElementById('seqbox'); box.textContent = store.melody.length ? store.melody.map(d => PAD.find(p => p[0] === d)[1]).join(' ') : '　'; document.getElementById('btn-seq-go').disabled = store.melody.length < 2; }
 document.querySelectorAll('#pm .presets button').forEach(b => b.addEventListener('click', () => {
-  const phrases = b.dataset.m.split('/').map(x => x.split(',').map(Number));
+  /* 9/23 みかさん「4/4の八分音符が反映されていない」→ 音ごとの長さ。書き方は d:h（h=長さの倍率・.5=八分・2=二分・省略=四分） */
+  const phrases = b.dataset.m.split('/').map(x => { const toks = x.split(',').map(t => t.split(':')); const arr = toks.map(t => Number(t[0])); arr.lens = toks.map(t => t[1] ? Number(t[1]) : 1); return arr; });
   store.melody = phrases[0].slice(); save(); renderSeq();
   pr.songPick = { name: b.textContent.trim(), phrases };
   const row = document.getElementById('song-row'); row.hidden = false; document.getElementById('btn-song-go').textContent = `🎵 「${pr.songPick.name}」を1曲通し（${phrases.length}フレーズ）`;
@@ -539,8 +544,9 @@ document.getElementById('btn-listen').addEventListener('click', () => {
   ensureCtx(); const b = document.getElementById('btn-listen'); b.disabled = true;
   const spans = document.querySelectorAll('#pb-notes span'); spans.forEach(s => s.className = '');
   const gap = pr.stage === 3 ? 450 : 700;
-  pr.targets.forEach((m, i) => setTimeout(() => { spans.forEach(s => s.className = ''); spans[i].className = 'cur'; }, i * gap));
-  const total = playSeq(pr.targets, gap);
+  const lensB = lensOf(), offB = lenOffsets(lensB).offs;
+  pr.targets.forEach((m, i) => setTimeout(() => { spans.forEach(s => s.className = ''); spans[i].className = 'cur'; }, offB[i] * gap));
+  const total = playSeq(pr.targets, gap, lensB);
   setTimeout(() => { spans.forEach(s => s.className = 'done'); b.disabled = false; b.textContent = '🔈 もう一度聞く'; document.getElementById('btn-b-next').disabled = false; }, total + 100);
 });
 document.getElementById('btn-lower').addEventListener('click', () => { store.startMidi = clamp(store.startMidi - 1, 36, 84); save(); buildTargets(pr.degrees); renderB(); });
@@ -552,7 +558,10 @@ document.getElementById('btn-oct-up').addEventListener('click', () => shiftKey(1
 document.getElementById('btn-rekey').addEventListener('click', () => document.getElementById('btn-reset').click());
 document.getElementById('btn-b-next').addEventListener('click', () => startC());
 
-function buildTargets(degrees) { pr.degrees = degrees.slice(); pr.targets = degrees.map(d => store.startMidi + d); pr.idx = 0; pr.results = []; }
+function buildTargets(degrees) { pr.degrees = degrees.slice(); pr.lens = (degrees.lens || degrees.map(() => 1)).slice(); pr.targets = degrees.map(d => store.startMidi + d); pr.idx = 0; pr.results = []; }
+/* 音ごとの長さ（単位=1音ぶんの秒）。offs=各音の開始位置（単位）・total=全体（単位） */
+function lensOf() { return pr.lens && pr.lens.length === pr.targets.length ? pr.lens : pr.targets.map(() => 1); }
+function lenOffsets(lens) { const offs = []; let a = 0; lens.forEach(l => { offs.push(a); a += l; }); return { offs, total: a }; }
 async function startC() {
   ensureCtx(); if (!(await micStart())) return;
   show('pc'); document.getElementById('pc-step').textContent = stageLabel(); pr.active = true; pr.armed = false; renderSing(); pr.okSince = 0; pr.smooth = null; pr.tries = 0; tr.samples.length = 0; phraseReset(); renderC(); onPitch(cTick);
@@ -565,9 +574,9 @@ function seqMode() { return pr.targets.length > 1; }
 function seqGap() { return Math.round(CONFIG.phraseToneSec * 1000 + 100); }   // 9/22 夕 みかさん「1フレーズのお手本は単音より短く（16分のイメージ）」→ 1音0.65秒（単音は1.3秒のまま）
 function cueTarget(chime) {
   if (seqMode()) {   // お手本が鳴っている間、音の丸を順に光らせる（聞く画面と同じ見せ方）
-    phraseReset(); const gap = seqGap(), total = playSeq(pr.targets, gap), d = total - pr.targets.length * gap;
+    phraseReset(); const gap = seqGap(), lensC = lensOf(), { offs: offC, total: unitsC } = lenOffsets(lensC), total = playSeq(pr.targets, gap, lensC), d = total - unitsC * gap;
     clearTimeout(pr.cueRestore);
-    pr.targets.forEach((_, i) => setTimeout(() => { if (!pr.active) return; ph.cueSlot = i; document.querySelectorAll('#pc-notes span').forEach((sp, j) => sp.classList.toggle('play', j === i)); }, d + i * gap));
+    pr.targets.forEach((_, i) => setTimeout(() => { if (!pr.active) return; ph.cueSlot = i; document.querySelectorAll('#pc-notes span').forEach((sp, j) => sp.classList.toggle('play', j === i)); }, d + offC[i] * gap));
     pr.cueRestore = setTimeout(() => { ph.cueSlot = -1; document.querySelectorAll('#pc-notes span').forEach(sp => sp.classList.remove('play')); }, total + 50);
     return;
   }
@@ -660,13 +669,13 @@ function phraseTick(hz, t) {
     if (!ph.t0) { w.className = 'word'; w.textContent = 'つづけて歌ってみましょう'; now.textContent = `「${pr.degrees.map(degJP).join('')}」`; }
     else if (t - ph.lastVoiced > CONFIG.phraseEndMs && ph.voicedMs >= CONFIG.phraseMinVoicedMs) { evaluatePhrase(); }
   }
-  if (ph.t0 && !ph.result && t - ph.t0 > pr.targets.length * phraseSlotMs() * 2.5) evaluatePhrase();
+  if (ph.t0 && !ph.result && t - ph.t0 > lenOffsets(lensOf()).total * phraseSlotMs() * 2.5) evaluatePhrase();
   drawPhrase(t);
 }
 function phraseSegments() {
   const segs = []; let cur = null;
   for (const s of ph.samples) {
-    if (cur && Math.abs(s.m - cur.mean) <= 0.6) { cur.vals.push(s.m); cur.end = s.t; cur.mean = cur.vals.reduce((a, b) => a + b, 0) / cur.vals.length; }
+    if (cur && Math.abs(s.m - cur.mean) <= 0.6 && s.t - cur.end < 150) { cur.vals.push(s.m); cur.end = s.t; cur.mean = cur.vals.reduce((a, b) => a + b, 0) / cur.vals.length; }   // 9/23 同じ高さでも150ms以上の息継ぎがあれば別の音（ドドドドを4つに数える）
     else { if (cur) segs.push(cur); cur = { start: s.t, end: s.t, vals: [s.m], mean: s.m }; }
   }
   if (cur) segs.push(cur);
@@ -677,6 +686,8 @@ function evaluatePhrase() {
   pr.targets.forEach((tg, i) => {
     let hit = null;
     for (let j = si; j < segs.length; j++) { const d = foldCents(segs[j].mean, tg); if (Math.abs(d) <= 250) { hit = { seg: segs[j], cents: d }; si = j + 1; break; } }
+    /* 9/23 同じ高さが続く音（ドドドド）: 新しい区切りが見つからなくても、前の音と同じ高さで十分長く伸びていれば、その続きとして数える（切らずに歌った人も落とさない） */
+    if (!hit && i && tg === pr.targets[i - 1] && per[i - 1].seg) { const sg = per[i - 1].seg; let k = 1; while (i - k - 1 >= 0 && pr.targets[i - k - 1] === tg && per[i - k - 1].seg === sg) k++; if (sg.end - sg.start >= (k + 1) * CONFIG.phraseMinSegMs * 1.5) hit = { seg: sg, cents: foldCents(sg.mean, tg) }; }
     if (hit) { const v = hit.seg.vals, mean = hit.seg.mean, wob = Math.sqrt(v.reduce((a, b) => a + (b - mean) * (b - mean), 0) / v.length) * 100; per.push({ deg: pr.degrees[i], m: tg, cents: hit.cents, ok: Math.abs(hit.cents) <= CONFIG.okCents, wobble: wob, seg: hit.seg }); }
     else per.push({ deg: pr.degrees[i], m: tg, cents: null, ok: false, wobble: 0, seg: null });
   });
@@ -709,9 +720,9 @@ function evaluatePhrase() {
 function drawPhrase(nowT) {
   const ctx = traceCtx(); if (!ctx) return; const w = tr.w, h = tr.h; ctx.clearRect(0, 0, w, h);
   const n = pr.targets.length, lo = Math.min(...pr.targets) - 2.5, hi = Math.max(...pr.targets) + 2.5, top = 22, bot = 16;
-  const yM = m => top + (h - top - bot) * (1 - (m - lo) / (hi - lo)); const slotW = w / n; const ok = CONFIG.okCents / 100, near = CONFIG.nearCents / 100;
+  const yM = m => top + (h - top - bot) * (1 - (m - lo) / (hi - lo)); const lensD = lensOf(), { offs: offD, total: unitsD } = lenOffsets(lensD), unitW = w / unitsD; const ok = CONFIG.okCents / 100, near = CONFIG.nearCents / 100;
   pr.targets.forEach((tg, i) => {
-    const x = i * slotW, res = ph.result ? ph.result.per[i] : null;
+    const x = offD[i] * unitW, slotW = lensD[i] * unitW, res = ph.result ? ph.result.per[i] : null;
     ctx.fillStyle = 'rgba(217,154,30,.08)'; ctx.fillRect(x + 2, yM(tg + near), slotW - 4, yM(tg - near) - yM(tg + near));
     ctx.fillStyle = ph.cueSlot === i ? 'rgba(31,42,43,.35)' : res ? (res.ok ? 'rgba(46,139,87,.28)' : 'rgba(192,80,77,.18)') : 'rgba(46,139,87,.18)'; ctx.fillRect(x + 2, yM(tg + ok), slotW - 4, yM(tg - ok) - yM(tg + ok));
     ctx.strokeStyle = res && !res.ok ? '#C0504D' : '#2E8B57'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x + 2, yM(tg)); ctx.lineTo(x + slotW - 2, yM(tg)); ctx.stroke();
@@ -719,7 +730,7 @@ function drawPhrase(nowT) {
     if (res && !res.ok && res.cents === null) { ctx.font = 'bold 22px -apple-system, sans-serif'; ctx.fillText('?', x + slotW / 2, yM(tg) + 26); }
   });
   if (!ph.t0) return;
-  const span = n * phraseSlotMs() / 0.92, xOf = t => Math.min(w - 4, (t - ph.t0) / span * w);
+  const span = unitsD * phraseSlotMs() / 0.92, xOf = t => Math.min(w - 4, (t - ph.t0) / span * w);
   ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; let prev = null;
   for (const s of ph.samples) { const x = xOf(s.t), y = yM(s.m); if (prev && s.t - prev.t < 120) { ctx.strokeStyle = colorOf(nearestCents(s.m)[0]); ctx.beginPath(); ctx.moveTo(prev.x, prev.y); ctx.lineTo(x, y); ctx.stroke(); } prev = { x, y, t: s.t }; }
   if (prev && !ph.result) { ctx.fillStyle = colorOf(nearestCents(ph.samples[ph.samples.length - 1].m)[0]); ctx.beginPath(); ctx.arc(prev.x, prev.y, 12, 0, Math.PI * 2); ctx.fill(); }
