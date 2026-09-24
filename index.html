@@ -106,9 +106,11 @@ details{margin-top:8px}summary{color:var(--sub);font-size:14px;cursor:pointer}
 .notes.wrap{flex-wrap:wrap}
 .pad{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:8px 0}
 .pad button{border:1.5px solid var(--line);background:#fff;border-radius:10px;padding:12px 4px;font-weight:700;font-size:16px}
+.chips{display:flex;flex-direction:column;gap:6px}.chips button{text-align:left;padding:10px 12px;border:1.5px solid var(--line);border-radius:12px;background:#fff;font-size:15px;color:var(--ink,#222)}.chips button b{color:var(--accent);margin-right:8px}
 .seqbox{min-height:44px;border:1px dashed var(--line);border-radius:10px;padding:6px 8px;font-size:18px;letter-spacing:.12em;word-break:break-all}
 .presets{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
 .presets button{border:1.5px solid var(--accent);color:var(--accent);background:#fff;border-radius:20px;padding:8px 14px;font-size:14px}
+.presets button.on{background:var(--accent);color:#fff}
 </style>
 </head>
 <body>
@@ -162,13 +164,18 @@ details{margin-top:8px}summary{color:var(--sub);font-size:14px;cursor:pointer}
     <h2>メロディを選ぶ・作る</h2>
     <div class="presets"><button data-m="0,2,4,5,|,4,2,0:2/4,5,7,9,|,7,5,4:2/0:1+1,0:1+1,|,0:1+1,0:1+1/0:.5,0:.5,2:.5,2:.5,4:.5,4:.5,5:.5,5:.5,|,4,2,0:2">かえるのうた</button><button data-m="0,0,7,7,|,9,9,7:2/5,5,4,4,|,2,2,0:2/7,7,5,5,|,4,4,2:2/7,7,5,5,|,4,4,2:2/0,0,7,7,|,9,9,7:2/5,5,4,4,|,2,2,0:2">きらきら星</button><button data-m="4,2,0,2,|,4,4,4:2/2,2,2:2,|,4,7,7:2/4,2,0,2,|,4,4,4,4/2,2,4,2,|,0:4">メリーさんのひつじ</button></div>
     <!-- 9/23 みかさん「かえるの歌も1フレーズしかなくて、1曲通してできない」→ プリセットは曲まるごと（フレーズを / で区切る）。押すと1フレーズ目が下の欄に入り、「1曲通し」ボタンが出る -->
-    <div class="row" id="song-row" hidden style="margin-top:8px"><button class="btn" id="btn-song-go">🎵 1曲通し</button></div>
+    <!-- 9/24 みかさん「どのボタンを押したら何が始まるのか分からない」→ 曲を選んだら、①1曲通す ②フレーズを選んで1つだけ、の2つをはっきり分けて出す -->
+    <div id="song-row" hidden style="margin-top:10px">
+      <div class="row"><button class="btn" id="btn-song-go">🎵 1曲通して歌う</button></div>
+      <p class="hint" style="margin:10px 0 6px">1フレーズだけ練習する</p>
+      <div id="phrase-chips" class="chips"></div>
+    </div>
     <p class="hint" style="margin-top:12px">自分で作る（ボタンを押した順に並びます・八分音符・16音まで）</p>
     <!-- プリセットは著作権の切れた民謡のメロディだけ（かえるのうた=ドイツ民謡／きらきら星=フランス民謡／メリーさんのひつじ=アメリカ民謡）。歌詞は使わない。チューリップ（井上武士・保護期間中）は9/21に外した -->
     <div class="pad" id="pad"></div>
     <div class="seqbox" id="seqbox">　</div>
     <div class="row" style="margin-top:8px"><button class="btn ghost" id="btn-seq-del">1つ消す</button><button class="btn ghost" id="btn-seq-clear">全部消す</button><button class="btn sec" id="btn-seq-play">🔈 聞く</button></div>
-    <div class="row" style="margin-top:8px"><button class="btn" id="btn-seq-go" disabled>このメロディでやる</button></div>
+    <div class="row" style="margin-top:8px"><button class="btn" id="btn-seq-go" disabled>作ったメロディでやる</button></div>
   </div>
 
   <div class="card" id="pc" hidden>
@@ -256,7 +263,7 @@ details{margin-top:8px}summary{color:var(--sub);font-size:14px;cursor:pointer}
 
 <script>
 /* ==========================================================
-   音程チェッカー v1.7（2026-09-24 昼）— 3曲を楽譜どおりに作り直し（2小節で1フレーズ・小節線・音の長さを丸の幅で・メリーさんの二分と全音符）（みかさん「楽譜を基準に」）／v1.6（2026-09-24）— 休符（かえるのうた3フレーズ目＝ド・休・ド・休…をお手本も表示も）／1フレーズだけの練習でも音の長さと休符を持っていく／エッジボイスなどの一瞬のガリッを捨てる（3点続いたときだけ採る・出だしのオクターブは5点の真ん中）（みかさん）／v1.5（2026-09-23 昼）— 同じ高さが続く音（ドドドド）を切れ目で4つに聞こえるように／プリセットに音の長さ（かえるのうた後半の八分音符・各フレーズ終わりの二分音符）／判定も息継ぎで音を数え、伸ばして歌った同音も落とさない（みかさん）／v1.4（2026-09-23）— 「聞く」画面に⬇⬆1オクターブと「高さを決め直す」／「聞く」と「いっしょにやる」を分ける（聞かなくても進める・練習画面でお手本を勝手に鳴らさない）／結果を「◯／✕ 合わなかった: …」で残す／プリセット3曲を1曲通しで（フレーズごとに合ったら次へ）／v1.3（2026-09-22夜）— ボタン名「判定スタート」・フレーズのお手本を途切れなくつなげて鳴らす（1つの音源で高さだけ切り替える）／v1.2（2026-09-22夕）— 「🎤 歌う」ボタン: 押すまで測らない（出遅れて次の音の枠で弾かれる問題）。お手本と横並び・やめるは下の小ボタンへ／v1.1（2026-09-22夕）— フレーズのお手本を1音0.65秒に（単音1.3秒の半分・16分のイメージ）、人の判定も短く（最短0.12秒・歌い終わり0.7秒）／v1.0（2026-09-22昼）— 2音以上はフレーズモード（お手本1音1.3秒→つづけて歌う→歌い終わりにまとめて判定・階段グラフ）／v0.9=保持0.5秒／v0.8=ステージ2を3段・合格の幅3段階／v0.7（2026-09-21夜）— 軌跡・保持ゲージ・入り方の分析・星3段階・連続日数（みかさん「可視化から発生の改善へ」）。v0.6=すごろく 単音→音階→メロディ
+   音程チェッカー v1.8（2026-09-24 昼）— 曲を選んだら「1曲通して歌う」と「1フレーズだけ練習（フレーズを選ぶ）」を分けて出す／休符で歌い終わりと見なさない／休符をはさむ同じ音は1本にのばしても数えない（1音でクリアになる不具合）／最後の音の休符でお手本がのびすぎていたのを直す（みかさん）／v1.7（2026-09-24 昼）— 3曲を楽譜どおりに作り直し（2小節で1フレーズ・小節線・音の長さを丸の幅で・メリーさんの二分と全音符）（みかさん「楽譜を基準に」）／v1.6（2026-09-24）— 休符（かえるのうた3フレーズ目＝ド・休・ド・休…をお手本も表示も）／1フレーズだけの練習でも音の長さと休符を持っていく／エッジボイスなどの一瞬のガリッを捨てる（3点続いたときだけ採る・出だしのオクターブは5点の真ん中）（みかさん）／v1.5（2026-09-23 昼）— 同じ高さが続く音（ドドドド）を切れ目で4つに聞こえるように／プリセットに音の長さ（かえるのうた後半の八分音符・各フレーズ終わりの二分音符）／判定も息継ぎで音を数え、伸ばして歌った同音も落とさない（みかさん）／v1.4（2026-09-23）— 「聞く」画面に⬇⬆1オクターブと「高さを決め直す」／「聞く」と「いっしょにやる」を分ける（聞かなくても進める・練習画面でお手本を勝手に鳴らさない）／結果を「◯／✕ 合わなかった: …」で残す／プリセット3曲を1曲通しで（フレーズごとに合ったら次へ）／v1.3（2026-09-22夜）— ボタン名「判定スタート」・フレーズのお手本を途切れなくつなげて鳴らす（1つの音源で高さだけ切り替える）／v1.2（2026-09-22夕）— 「🎤 歌う」ボタン: 押すまで測らない（出遅れて次の音の枠で弾かれる問題）。お手本と横並び・やめるは下の小ボタンへ／v1.1（2026-09-22夕）— フレーズのお手本を1音0.65秒に（単音1.3秒の半分・16分のイメージ）、人の判定も短く（最短0.12秒・歌い終わり0.7秒）／v1.0（2026-09-22昼）— 2音以上はフレーズモード（お手本1音1.3秒→つづけて歌う→歌い終わりにまとめて判定・階段グラフ）／v0.9=保持0.5秒／v0.8=ステージ2を3段・合格の幅3段階／v0.7（2026-09-21夜）— 軌跡・保持ゲージ・入り方の分析・星3段階・連続日数（みかさん「可視化から発生の改善へ」）。v0.6=すごろく 単音→音階→メロディ
    ピッチ検出は「声の育成日記」の framePitchACF（自己相関法）を流用。端末内で完結。
    ========================================================== */
 const IOS = /iPhone|iPad|iPod/.test(navigator.userAgent);   // 9/21 12周目: 定義より前で使っていて読み込み時に落ち、全ボタンが死んでいた → 先頭へ
@@ -439,9 +446,9 @@ function playSeq(midis, gap, lens, rests) {
     const tb = t0 + at(i);
     if (i && rests[i - 1] > 0) { g.gain.setValueAtTime(0.002, tb - 0.01); g.gain.exponentialRampToValueAtTime(vol, tb + 0.05); }
     else if (i && m === midis[i - 1]) { g.gain.setValueAtTime(vol, tb - 0.06); g.gain.exponentialRampToValueAtTime(0.002, tb - 0.005); g.gain.setValueAtTime(0.002, tb + 0.02); g.gain.exponentialRampToValueAtTime(vol, tb + 0.07); }
-    if (rests[i] > 0 && i < midis.length - 1) { const re = tb + (lens[i] - rests[i]) * gap / 1000; g.gain.setValueAtTime(vol, re - 0.06); g.gain.exponentialRampToValueAtTime(0.002, re); }
+    if (rests[i] > 0) { const re = tb + (lens[i] - rests[i]) * gap / 1000; g.gain.setValueAtTime(vol, re - 0.06); g.gain.exponentialRampToValueAtTime(0.002, re); }
   });
-  g.gain.setValueAtTime(vol, t0 + total - 0.12); g.gain.exponentialRampToValueAtTime(0.0001, t0 + total);
+  if (!(rests[midis.length - 1] > 0)) { g.gain.setValueAtTime(vol, t0 + total - 0.12); g.gain.exponentialRampToValueAtTime(0.0001, t0 + total); }   /* 9/24 最後の音に休符があるときは、上の休符の処理ですでに消えている（前は最後のドが二分ぶんのびていた） */
   const comp = ctx.createDynamicsCompressor(); comp.threshold.value = -18; comp.knee.value = 12; comp.ratio.value = 6; comp.attack.value = 0.003; comp.release.value = 0.2;
   osc.connect(lp); lp.connect(f1); f1.connect(g); g.connect(comp); comp.connect(ctx.destination); osc.start(t0); vib.start(t0); osc.stop(t0 + total); vib.stop(t0 + total);
   toneNodes = { osc, vib }; mic.muteUntil = performance.now() + (delay + total) * 1000 + 250;
@@ -533,9 +540,11 @@ function renderSeq() { const box = document.getElementById('seqbox'); box.textCo
 document.querySelectorAll('#pm .presets button').forEach(b => b.addEventListener('click', () => {
   /* 9/23 みかさん「4/4の八分音符が反映されていない」→ 音ごとの長さ。書き方は d:h（h=長さの倍率・.5=八分・2=二分・省略=四分） */
   const phrases = b.dataset.m.split('/').map(x => { const raw = x.split(','); const bars = []; const toks = []; raw.forEach(t => { if (t === '|') { if (toks.length) bars[toks.length - 1] = true; } else toks.push(t.split(':')); }); const arr = toks.map(t => Number(t[0])); arr.bars = toks.map((_, i) => !!bars[i]); const pl = t => (t[1] || '1').split('+').map(Number); arr.lens = toks.map(t => pl(t)[0] + (pl(t)[1] || 0)); arr.rests = toks.map(t => pl(t)[1] || 0); return arr; });   /* 9/24 休符: 「0:1+1」＝1拍鳴らして1拍休む（lens は休みこみの長さ） */
-  store.melody = phrases[0].slice(); save(); renderSeq();
   pr.songPick = { name: b.textContent.trim(), phrases };
-  const row = document.getElementById('song-row'); row.hidden = false; document.getElementById('btn-song-go').textContent = `🎵 「${pr.songPick.name}」を1曲通し（${phrases.length}フレーズ）`;
+  document.querySelectorAll('#pm .presets button').forEach(x => x.classList.toggle('on', x === b));
+  const row = document.getElementById('song-row'); row.hidden = false; document.getElementById('btn-song-go').textContent = `🎵 「${pr.songPick.name}」を1曲通して歌う（${phrases.length}フレーズ）`;
+  const chips = document.getElementById('phrase-chips'); chips.innerHTML = '';
+  phrases.forEach((ph0, k) => { const c = document.createElement('button'); c.innerHTML = `<b>フレーズ${k + 1}</b>` + ph0.map((d, i) => degJP(d) + (ph0.rests && ph0.rests[i] ? '　' : '') + (ph0.bars && ph0.bars[i] ? ' ｜ ' : '')).join(''); c.addEventListener('click', () => { pr.song = null; buildTargets(ph0); renderB(); show('pb'); }); chips.appendChild(c); });
 }));
 document.getElementById('btn-song-go').addEventListener('click', () => { if (!pr.songPick) return; pr.song = pr.songPick; pr.songIdx = 0; pr.songResults = []; pr.songTries = 0; buildTargets(pr.song.phrases[0]); startC(); });
 document.getElementById('btn-seq-del').addEventListener('click', () => { store.melody.pop(); save(); renderSeq(); });
@@ -701,10 +710,18 @@ function phraseTick(hz, t) {
     w.className = 'word ' + k; w.textContent = `いま「${degJP(pr.degrees[i])}」のあたり`; now.textContent = 'つづけて歌います…';
   } else {
     if (!ph.t0) { w.className = 'word'; w.textContent = 'つづけて歌ってみましょう'; now.textContent = `「${pr.degrees.map(degJP).join('')}」`; }
-    else if (t - ph.lastVoiced > CONFIG.phraseEndMs && ph.voicedMs >= CONFIG.phraseMinVoicedMs) { evaluatePhrase(); }
+    else if (t - ph.lastVoiced > phraseEndLimit() && ph.voicedMs >= CONFIG.phraseMinVoicedMs) { evaluatePhrase(); }
   }
   if (ph.t0 && !ph.result && t - ph.t0 > lenOffsets(lensOf()).total * phraseSlotMs() * 2.5) evaluatePhrase();
   drawPhrase(t);
+}
+/* 9/24 みかさん「休符で勝手に収録が終わったと認識されて、判定が止まった」→ 歌い終わりの無音の長さに、そのフレーズでいちばん長い休符のぶんを足す。
+   さらに、まだ最後の音まで来ていない（時間がお手本の7割に届いていない）うちは、無音でも終わりにしない */
+function phraseEndLimit() {
+  const gap = phraseSlotMs(), rests = pr.rests || [], maxRest = rests.length ? Math.max(...rests) * gap : 0;
+  const expect = lenOffsets(lensOf()).total * gap;
+  const early = ph.t0 && (ph.lastVoiced - ph.t0) < expect * 0.7;
+  return CONFIG.phraseEndMs + maxRest + (early && maxRest ? maxRest : 0);
 }
 function phraseSegments() {
   const segs = []; let cur = null;
@@ -721,7 +738,7 @@ function evaluatePhrase() {
     let hit = null;
     for (let j = si; j < segs.length; j++) { const d = foldCents(segs[j].mean, tg); if (Math.abs(d) <= 250) { hit = { seg: segs[j], cents: d }; si = j + 1; break; } }
     /* 9/23 同じ高さが続く音（ドドドド）: 新しい区切りが見つからなくても、前の音と同じ高さで十分長く伸びていれば、その続きとして数える（切らずに歌った人も落とさない） */
-    if (!hit && i && tg === pr.targets[i - 1] && per[i - 1].seg) { const sg = per[i - 1].seg; let k = 1; while (i - k - 1 >= 0 && pr.targets[i - k - 1] === tg && per[i - k - 1].seg === sg) k++; if (sg.end - sg.start >= (k + 1) * CONFIG.phraseMinSegMs * 1.5) hit = { seg: sg, cents: foldCents(sg.mean, tg) }; }
+    if (!hit && i && tg === pr.targets[i - 1] && per[i - 1].seg && !((pr.rests || [])[i - 1] > 0)) { const sg = per[i - 1].seg; let k = 1; while (i - k - 1 >= 0 && pr.targets[i - k - 1] === tg && per[i - k - 1].seg === sg) k++; if (sg.end - sg.start >= (k + 1) * CONFIG.phraseMinSegMs * 1.5) hit = { seg: sg, cents: foldCents(sg.mean, tg) }; }
     if (hit) { const v = hit.seg.vals, mean = hit.seg.mean, wob = Math.sqrt(v.reduce((a, b) => a + (b - mean) * (b - mean), 0) / v.length) * 100; per.push({ deg: pr.degrees[i], m: tg, cents: hit.cents, ok: Math.abs(hit.cents) <= CONFIG.okCents, wobble: wob, seg: hit.seg }); }
     else per.push({ deg: pr.degrees[i], m: tg, cents: null, ok: false, wobble: 0, seg: null });
   });
