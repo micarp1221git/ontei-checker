@@ -5,14 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>音程チェッカー</title>
 <meta name="description" content="聞こえた音と同じ高さで「あー」。自分の声がどれくらい高いか低いかが見えて、ドレミファソがそろう音程チェッカー。ボイストレーナーみか監修。">
-<meta name="theme-color" content="#1F3A3D">
+<meta name="theme-color" content="#FFF8F5">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="音程チェッカー">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <style>
-:root{--bg:#F6F4EE;--ink:#1F2A2B;--sub:#6B7476;--line:#E1DDD3;--card:#FFFFFF;--accent:#1F6F73;--ok:#2E8B57;--near:#D99A1E;--far:#C0504D;--tab:#1F3A3D}
+:root{--bg:#FFF8F5;--ink:#3D3535;--sub:#7D7270;--line:#E9DDD7;--card:#FFF8F5;--accent:#E8815B;--ok:#4CBC8A;--near:#E0A93B;--far:#D9674A;--tab:#3D3535;--blue:#49BACE;--canvas:#FFFFFF}
+/* 9/24 みかさん「黒い背景はダークモードを選べればその時に使えばいい」→ 端末がダークモードのときだけ濃い地 */
+@media (prefers-color-scheme: dark){:root{--bg:#3D3535;--ink:#FFF8F5;--sub:#C9BDB8;--line:#5A5050;--card:#3D3535;--tab:#FFF8F5;--canvas:#FFF8F5}}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP",system-ui,sans-serif;font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
 button{font:inherit;cursor:pointer}
@@ -22,54 +24,54 @@ header h1{font-size:18px;margin:0}
 header .mode{font-size:12px;color:var(--sub)}
 main{flex:1;padding:8px 16px 96px}
 .screen{display:none}.screen.active{display:block}
-.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px 18px;margin:12px 0}
+.card{background:var(--card);border:0;border-top:1px solid var(--ink);border-radius:0;padding:18px 2px;margin:12px 0}
 .step{font-size:12px;color:var(--sub);letter-spacing:.06em}
 h2{font-size:22px;margin:4px 0 6px;line-height:1.4}
 .lead{font-size:16px;margin:0 0 14px}
 .hint{color:var(--sub);font-size:14px;margin:8px 0 0}
 [hidden]{display:none!important}
 .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-.btn{flex:1;border:0;border-radius:12px;padding:16px 12px;font-size:17px;font-weight:700;background:var(--accent);color:#fff}
-.btn.sec{background:#fff;color:var(--accent);border:1.5px solid var(--accent)}
-.btn.ghost{background:transparent;color:var(--sub);border:1px solid var(--line);font-weight:500;font-size:14px;padding:10px}
+.btn{flex:1;border:2px solid var(--ink);border-radius:0;padding:15px 12px;font-size:17px;font-weight:700;background:var(--accent);color:#3D3535}
+.btn.sec{background:var(--bg);color:var(--ink);border:2px solid var(--ink)}
+.btn.ghost{background:transparent;color:var(--sub);border:1px solid var(--line);border-radius:0;font-weight:500;font-size:14px;padding:10px}
 .btn:disabled{opacity:.45}
-.btn.armed{background:#2E8B57}
+.btn.armed{background:var(--ok)}
 .big{font-size:60px;font-weight:700;line-height:1.1;text-align:center;margin:6px 0 0}
 .big small{font-size:20px;font-weight:500;color:var(--sub);margin-left:6px}
 .center{text-align:center}
 .notes{display:flex;gap:6px;justify-content:center;margin:8px 0 4px}
 .notes{flex-wrap:wrap;row-gap:8px}
 .notes span{flex-shrink:0;white-space:nowrap}
-.notes span{width:44px;height:44px;border-radius:50%;border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--sub);background:#fff;font-size:17px}
+.notes span{width:44px;height:44px;border-radius:50%;border:1.5px solid var(--ink);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--ink);background:transparent;font-size:17px}
 .notes span.two{font-size:12px;letter-spacing:-.04em}
 .notes span[data-bar]{margin-right:22px;position:relative}.notes span[data-bar]::before{content:'';position:absolute;right:-13px;top:4px;bottom:4px;width:2px;background:var(--sub);opacity:.5}
 .notes span[data-rest][data-bar]::before{right:-26px}.notes span[data-rest][data-bar]{margin-right:34px}
 .notes span[data-rest]{margin-right:22px;position:relative}.notes span[data-rest]::after{content:'';position:absolute;right:-17px;top:50%;width:12px;height:4px;margin-top:-2px;border-radius:2px;background:var(--line)}
-.notes span.cur{border-color:var(--accent);color:var(--accent);box-shadow:0 0 0 3px rgba(31,111,115,.15);transform:scale(1.15)}
-.notes span.play{background:var(--ink);border-color:var(--ink);color:#fff;transform:scale(1.15)}
+.notes span.cur{background:var(--accent);border-color:var(--ink);color:#3D3535;box-shadow:0 0 0 3px var(--bg),0 0 0 5px var(--accent);transform:scale(1.1)}
+.notes span.play{background:var(--ink);border-color:var(--ink);color:var(--bg);transform:scale(1.1)}
 .notes span.miss{border-color:var(--far);color:var(--far)}
 .notes span{transition:transform .15s,background .15s}
 .result{list-style:none;padding:0;margin:6px 0}.result li{display:grid;grid-template-columns:2.6em 1fr 4.2em 3.4em;gap:0 8px;align-items:baseline;padding:5px 0;border-bottom:1px solid var(--line);font-size:15px}
 .result li.head{color:var(--sub);font-size:12px;border-bottom:0;padding-bottom:0}.result li b{font-size:17px}.result li .r{text-align:right;color:var(--sub);font-variant-numeric:tabular-nums}.result li .a.hit{color:var(--ok);font-weight:700}
-.notes span.done{background:var(--ok);border-color:var(--ok);color:#fff}
+.notes span.done{background:var(--ok);border-color:var(--ok);color:#3D3535}
 .trace{position:relative;height:205px;margin:8px auto 4px;width:100%;max-width:360px}   /* 9/22 夕: 230→205。グラフ＋お手本/歌うボタンをスクロール無しで */
-.trace canvas{width:100%;height:100%;display:block;border-radius:12px;background:#fff;border:1px solid var(--line)}
+.trace canvas{width:100%;height:100%;display:block;border-radius:0;background:var(--canvas);border:1px solid var(--ink)}
 .trace .lab{position:absolute;left:10px;font-size:12px;color:var(--sub)}
 .trace .lab.t{top:6px}.trace .lab.b{bottom:6px}
-.prog{height:8px;background:var(--line);border-radius:4px;overflow:hidden;margin:6px 0 8px}.prog i{display:block;height:100%;width:0;background:var(--ok);transition:width .3s}
-.stars{text-align:center;font-size:46px;letter-spacing:.08em;margin:2px 0 6px;color:#D9B21E;line-height:1.2}
-.stars span{display:inline-block;opacity:.22}.stars span.on{opacity:1;animation:pop .5s cubic-bezier(.2,1.6,.4,1) both}
+.prog{height:6px;background:var(--line);border-radius:0;overflow:hidden;margin:6px 0 8px}.prog i{display:block;height:100%;width:0;background:var(--ok);transition:width .3s}
+.stars{text-align:left;font-size:44px;letter-spacing:.08em;margin:10px 0 0;color:#FFF8F5;line-height:1.2}
+.stars span{display:inline-block;opacity:.35}.stars span.on{opacity:1;animation:pop .5s cubic-bezier(.2,1.6,.4,1) both}
 @keyframes pop{from{transform:scale(0)}to{transform:scale(1)}}
 .notes span.hit{animation:pop .4s cubic-bezier(.2,1.6,.4,1)}
 .streak{font-size:13px;color:var(--near);font-weight:700;margin-left:auto;margin-right:10px}
-.coach{background:#EEF5F3;border-radius:10px;padding:12px 14px;margin:10px 0 4px;font-size:15px}
+.coach{background:rgba(73,186,206,.12);border-left:3px solid var(--blue);border-radius:0;padding:12px 14px;margin:10px 0 4px;font-size:15px}
 .big .abs{font-size:15px;font-weight:500;color:var(--sub);margin-left:8px}
 .word{text-align:center;font-size:26px;font-weight:700;min-height:44px;margin:4px 0 0}
 .word.ok{color:var(--ok)}.word.near{color:var(--near)}.word.far{color:var(--far)}
 .sub{text-align:center;color:var(--sub);font-size:14px;min-height:22px}
 .lvl{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin:8px 0 2px}.lvl i{display:block;height:100%;width:0;background:var(--accent);transition:width .08s}
 .lvl-txt{min-height:18px;text-align:center;font-size:13px;color:var(--sub)}
-.tone{position:absolute;left:50%;top:6px;transform:translateX(-50%);background:var(--ink);color:#fff;font-size:13px;padding:4px 12px;border-radius:20px;opacity:0;transition:opacity .2s}
+.tone{position:absolute;left:50%;top:6px;transform:translateX(-50%);background:var(--ink);color:var(--bg);font-size:13px;padding:4px 12px;border-radius:0;opacity:0;transition:opacity .2s}
 .tone.on{opacity:1}
 .kv{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);font-size:15px}
 .kv:last-child{border-bottom:0}.kv b{font-size:18px}
@@ -82,37 +84,41 @@ h2{font-size:22px;margin:4px 0 6px;line-height:1.4}
 .meter .needle{position:absolute;top:4px;width:6px;height:48px;border-radius:3px;background:var(--far);left:50%;transform:translateX(-3px);transition:left .08s linear,background .15s}
 .meter .lab{position:absolute;top:40px;font-size:11px;color:var(--sub)}
 .meter .lab.l{left:0}.meter .lab.r{right:0}.meter .lab.c{left:50%;transform:translateX(-50%)}
-.toast{position:fixed;left:50%;bottom:110px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 18px;border-radius:12px;font-size:16px;font-weight:700;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90%;text-align:center}
+.toast{position:fixed;left:50%;bottom:110px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:12px 18px;border-radius:0;font-size:16px;font-weight:700;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90%;text-align:center}
 .toast.show{opacity:1}
 /* 9/24 みかさん「判定スタートがスクロールしないと見えなかった（かえるのうた フレーズ4）」→ ボタン列を画面の下（タブの上）に貼りつける */
-.actbar{position:sticky;bottom:calc(72px + env(safe-area-inset-bottom));z-index:5;background:#fff;padding:8px 0;box-shadow:0 -6px 12px -8px rgba(0,0,0,.15)}
-nav{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);display:flex;padding-bottom:env(safe-area-inset-bottom)}
+.actbar{position:sticky;bottom:calc(72px + env(safe-area-inset-bottom));z-index:5;background:var(--bg);padding:8px 0;box-shadow:0 -6px 12px -8px rgba(0,0,0,.15)}
+nav{position:fixed;left:0;right:0;bottom:0;background:var(--bg);border-top:1px solid var(--ink);display:flex;padding-bottom:env(safe-area-inset-bottom)}
 nav button{flex:1;border:0;background:transparent;padding:10px 4px 8px;font-size:12px;color:var(--sub);display:flex;flex-direction:column;align-items:center;gap:2px}
-nav button .ic{font-size:20px;line-height:1}
-nav button.on{color:var(--tab);font-weight:700}
+nav button .ic{width:22px;height:22px;display:block}nav button .ic svg{width:22px;height:22px;display:block}
+nav button.on{color:var(--accent);font-weight:700}
 .small{font-size:13px;color:var(--sub)}
 .foot{color:var(--sub);font-size:12px;text-align:center;margin-top:18px}
-.seg{display:flex;border:1.5px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}
-.seg button{flex:1;border:0;background:transparent;padding:10px 6px;font-size:14px;color:var(--sub)}
-.seg button.on{background:var(--accent);color:#fff}
+.seg{display:flex;border:2px solid var(--ink);border-radius:0;overflow:hidden;background:transparent}
+.seg button{flex:1;border:0;background:transparent;padding:10px 6px;font-size:14px;color:var(--ink)}
+.seg button.on{background:var(--accent);color:#3D3535;font-weight:700}
 #pb-levels button{padding:8px 2px;font-size:13px;line-height:1.3}#pb-levels button .st{display:block;font-size:12px;letter-spacing:.05em;min-height:16px}
 details{margin-top:8px}summary{color:var(--sub);font-size:14px;cursor:pointer}
 .result{padding-left:20px;margin:6px 0}.result li{margin:4px 0}
-.btn.rec{background:var(--far);box-shadow:0 0 0 4px rgba(192,80,77,.25)}
+.btn.rec{background:var(--far);box-shadow:0 0 0 3px var(--bg),0 0 0 5px var(--far)}
 .err{color:var(--far);font-weight:700;font-size:17px;text-align:center;margin-top:8px}
-.stages{display:flex;gap:8px;margin:4px 0 10px}
-.stage{flex:1;border:1.5px solid var(--line);border-radius:12px;background:#fff;padding:10px 6px;text-align:center;cursor:pointer}
-.stage .n{font-size:11px;color:var(--sub)}.stage .t{font-weight:700;font-size:15px}.stage .s{font-size:14px;color:var(--near);min-height:20px}
-.stage.cur{border-color:var(--accent);box-shadow:0 0 0 3px rgba(31,111,115,.15)}
-.stage.locked{opacity:.55}
+.stages{display:flex;gap:6px;margin:4px 0 10px;align-items:flex-start}
+.stage{flex:1;border:2px solid var(--ink);border-radius:0;background:transparent;padding:6px 8px 8px;text-align:left;cursor:pointer}.stage[data-stage="2"]{margin-top:6px}.stage[data-stage="3"]{margin-top:12px}
+.stage .n{font-family:-apple-system,sans-serif;font-size:28px;font-weight:700;letter-spacing:-.06em;line-height:1.05;color:var(--accent)}.stage .t{font-weight:700;font-size:15px}.stage .s{font-size:14px;color:var(--near);min-height:20px}
+.stage.cur{background:var(--accent)}.stage.cur .n,.stage.cur .t,.stage.cur .s{color:#3D3535}
+.stage.locked{opacity:.55}.stage.cur{opacity:1}
 .notes.wrap{flex-wrap:wrap}
 .pad{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:8px 0}
-.pad button{border:1.5px solid var(--line);background:#fff;border-radius:10px;padding:12px 4px;font-weight:700;font-size:16px}
-.chips{display:flex;flex-direction:column;gap:6px}.chips button{text-align:left;padding:10px 12px;border:1.5px solid var(--line);border-radius:12px;background:#fff;font-size:15px;color:var(--ink,#222)}.chips button b{color:var(--accent);margin-right:8px}
-.seqbox{min-height:44px;border:1px dashed var(--line);border-radius:10px;padding:6px 8px;font-size:18px;letter-spacing:.12em;word-break:break-all}
+.pad button{border:1.5px solid var(--ink);background:transparent;color:var(--ink);border-radius:0;padding:12px 4px;font-weight:700;font-size:16px}
+.chips{display:flex;flex-direction:column;gap:6px}.chips button{text-align:left;padding:10px 12px;border:1.5px solid var(--ink);border-radius:0;background:transparent;font-size:15px;color:var(--ink)}.chips button b{color:var(--accent);margin-right:8px}
+.seqbox{min-height:44px;border:1px dashed var(--ink);border-radius:0;padding:6px 8px;font-size:18px;letter-spacing:.12em;word-break:break-all}
 .presets{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
-.presets button{border:1.5px solid var(--accent);color:var(--accent);background:#fff;border-radius:20px;padding:8px 14px;font-size:14px}
-.presets button.on{background:var(--accent);color:#fff}
+.presets button{border:1.5px solid var(--ink);color:var(--ink);background:transparent;border-radius:0;padding:8px 14px;font-size:14px}
+.presets button.on{background:var(--accent);color:#3D3535}
+.catch{font-size:30px;font-weight:800;letter-spacing:-.02em;margin:6px 0 12px;line-height:1.3}
+.clearhead{background:var(--ok);color:#3D3535;padding:16px 16px 18px;margin:-18px -2px 12px;position:relative;min-height:150px}
+.clearhead .step{color:#3D3535}.clearhead h2{margin:4px 0 0;font-size:20px}
+header h1{font-weight:700;letter-spacing:.02em}
 </style>
 </head>
 <body>
@@ -122,23 +128,24 @@ details{margin-top:8px}summary{color:var(--sub);font-size:14px;cursor:pointer}
 
 <!-- ===== れんしゅう（1本道） ===== -->
 <section id="screen-practice" class="screen active">
+  <h2 class="catch" id="catch">その音、合ってる？</h2>
   <div class="stages" id="stages">
-    <div class="stage" data-stage="1"><div class="n">ステージ1</div><div class="t">単音</div><div class="s"></div></div>
-    <div class="stage" data-stage="2"><div class="n">ステージ2</div><div class="t">音階</div><div class="s"></div></div>
-    <div class="stage" data-stage="3"><div class="n">ステージ3</div><div class="t">メロディ</div><div class="s"></div></div>
+    <div class="stage" data-stage="1"><div class="n">01</div><div class="t">単音</div><div class="s"></div></div>
+    <div class="stage" data-stage="2"><div class="n">02</div><div class="t">音階</div><div class="s"></div></div>
+    <div class="stage" data-stage="3"><div class="n">03</div><div class="t">メロディ</div><div class="s"></div></div>
   </div>
 
   <div class="card" id="pa">
     <div class="step">1 / 3</div>
     <h2 id="pa-h2">まず、楽な高さで「あー」</h2>
     <p class="lead" id="pa-lead">ふだん話すくらいの高さで、3秒のばします。あなたの声に合うドレミの高さを決めます。</p>
-    <div class="row"><button class="btn" id="btn-voice">🎤 「あー」を3秒</button></div>
+    <div class="row"><button class="btn" id="btn-voice">「あー」を3秒</button></div>
     <div class="lvl"><i></i></div><div class="lvl-txt"></div>
     <div class="sub" id="pa-msg">&nbsp;</div>
     <div class="err" id="pa-err"></div>
     <div class="row" id="pa-next" hidden><button class="btn" id="btn-a-next">つぎへ</button></div>
     <p id="ios-note" class="s" hidden style="margin-top:10px;font-size:13px;opacity:.8">iPhoneでは、お手本が鳴るたびに「マイクへのアクセス」の表示が出ます。エラーではありません（鳴らす間だけマイクを止めているためです）。</p>
-    <div class="center" style="margin-top:8px"><button class="btn ghost" id="btn-soundtest" style="flex:0 0 auto;padding:6px 14px;font-size:13px">🔈 音が出るかテスト（マイクを使わずに鳴らす）</button></div>
+    <div class="center" style="margin-top:8px"><button class="btn ghost" id="btn-soundtest" style="flex:0 0 auto;padding:6px 14px;font-size:13px">音が出るかテスト（マイクを使わずに鳴らす）</button></div>
     <div class="center" id="pa-redo" hidden style="margin-top:8px"><button class="btn ghost" id="btn-redo" style="flex:0 0 auto;padding:6px 14px">録り直す</button></div>
   </div>
 
@@ -148,13 +155,13 @@ details{margin-top:8px}summary{color:var(--sub);font-size:14px;cursor:pointer}
     <p class="lead" id="pb-lead">あなたの声に合わせた高さで鳴ります。まずは聞くだけ。</p>
     <div class="seg" id="pb-levels" hidden style="margin:0 0 10px"></div>
     <div class="notes wrap" id="pb-notes"></div>
-    <div class="row"><button class="btn sec" id="btn-listen" hidden>🔈 聞く</button><button class="btn" id="btn-b-next">挑戦する</button></div>
+    <div class="row"><button class="btn sec" id="btn-listen" hidden>聞く</button><button class="btn" id="btn-b-next">挑戦する</button></div>
     <p class="hint" id="pb-how">「挑戦する」で練習の画面へ。そこでは「お手本」で聞いて、「判定スタート」から歌います。</p>
     <p class="hint">高すぎる・低すぎると感じたら、半音ずつ動かせます。</p>
-    <div class="row" style="margin-top:8px"><button class="btn ghost" id="btn-lower">♭ 少し低く</button><button class="btn ghost" id="btn-higher">♯ 少し高く</button></div>
+    <div class="row" style="margin-top:8px"><button class="btn ghost" id="btn-lower">少し低く</button><button class="btn ghost" id="btn-higher">少し高く</button></div>
     <!-- 9/23 みかさん「お手本が女性にはオクターブ低く聞こえる」「最初の『あー』の画面が再読み込みで出てこない」→ オクターブで動かすボタンと、高さを決め直す入口をここに -->
-    <div class="row" style="margin-top:8px"><button class="btn ghost" id="btn-oct-down">⬇ 1オクターブ下</button><button class="btn ghost" id="btn-oct-up">⬆ 1オクターブ上</button></div>
-    <div class="center" style="margin-top:8px"><button class="btn ghost" id="btn-rekey" style="flex:0 0 auto;padding:6px 14px;font-size:13px">🎤 高さを決め直す（楽な高さの「あー」から）</button></div>
+    <div class="row" style="margin-top:8px"><button class="btn ghost" id="btn-oct-down">1オクターブ下</button><button class="btn ghost" id="btn-oct-up">1オクターブ上</button></div>
+    <div class="center" style="margin-top:8px"><button class="btn ghost" id="btn-rekey" style="flex:0 0 auto;padding:6px 14px;font-size:13px">高さを決め直す（楽な高さの「あー」から）</button></div>
     <div class="sub" id="pb-key">&nbsp;</div>
   </div>
 
@@ -165,7 +172,7 @@ details{margin-top:8px}summary{color:var(--sub);font-size:14px;cursor:pointer}
     <!-- 9/23 みかさん「かえるの歌も1フレーズしかなくて、1曲通してできない」→ プリセットは曲まるごと（フレーズを / で区切る）。押すと1フレーズ目が下の欄に入り、「1曲通し」ボタンが出る -->
     <!-- 9/24 みかさん「どのボタンを押したら何が始まるのか分からない」→ 曲を選んだら、①1曲通す ②フレーズを選んで1つだけ、の2つをはっきり分けて出す -->
     <div id="song-row" hidden style="margin-top:10px">
-      <div class="row"><button class="btn" id="btn-song-go">🎵 1曲通して歌う</button></div>
+      <div class="row"><button class="btn" id="btn-song-go">1曲通して歌う</button></div>
       <p class="hint" style="margin:10px 0 6px">1フレーズだけ練習する</p>
       <div id="phrase-chips" class="chips"></div>
     </div>
@@ -173,7 +180,7 @@ details{margin-top:8px}summary{color:var(--sub);font-size:14px;cursor:pointer}
     <!-- プリセットは著作権の切れた民謡のメロディだけ（かえるのうた=ドイツ民謡／きらきら星=フランス民謡／メリーさんのひつじ=アメリカ民謡）。歌詞は使わない。チューリップ（井上武士・保護期間中）は9/21に外した -->
     <div class="pad" id="pad"></div>
     <div class="seqbox" id="seqbox">　</div>
-    <div class="row" style="margin-top:8px"><button class="btn ghost" id="btn-seq-del">1つ消す</button><button class="btn ghost" id="btn-seq-clear">全部消す</button><button class="btn sec" id="btn-seq-play">🔈 聞く</button></div>
+    <div class="row" style="margin-top:8px"><button class="btn ghost" id="btn-seq-del">1つ消す</button><button class="btn ghost" id="btn-seq-clear">全部消す</button><button class="btn sec" id="btn-seq-play">聞く</button></div>
     <div class="row" style="margin-top:8px"><button class="btn" id="btn-seq-go" disabled>作ったメロディでやる</button></div>
   </div>
 
@@ -185,23 +192,23 @@ details{margin-top:8px}summary{color:var(--sub);font-size:14px;cursor:pointer}
     <div class="big" id="pc-target" hidden>ド</div>
     <!-- 9/22 みかさん「グラフがスクロールしないと見えない・もう一度お手本ボタンが見えない」→ グラフを上へ、ボタンをその直下に -->
     <div class="trace">
-      <div class="tone" id="pc-tone">🔈 お手本</div>
+      <div class="tone" id="pc-tone">お手本</div>
       <span class="lab t">高い</span><span class="lab b">低い</span>
       <canvas id="pc-canvas"></canvas>
     </div>
     <div class="word" id="pc-word">&nbsp;</div>
     <div class="sub" id="pc-now">&nbsp;</div>
-    <!-- 9/22 夕 みかさん「判定スタートがいつか分かりにくい。出遅れるとレの枠でドを歌って弾かれる」→ 🎤 歌う ボタン。押すまで測らない。お手本と同じ大きさで横並び・グラフと一緒にスクロール無しで見える -->
-    <div class="row actbar" style="margin:6px 0 4px"><button class="btn sec" id="btn-replay">🔈 お手本</button><button class="btn" id="btn-sing">▶ 判定スタート</button></div>
+    <!-- 9/22 夕 みかさん「判定スタートがいつか分かりにくい。出遅れるとレの枠でドを歌って弾かれる」→ 歌う ボタン。押すまで測らない。お手本と同じ大きさで横並び・グラフと一緒にスクロール無しで見える -->
+    <div class="row actbar" style="margin:6px 0 4px"><button class="btn sec" id="btn-replay">お手本</button><button class="btn" id="btn-sing">判定スタート</button></div>
     <div class="center small" id="pc-sub" hidden></div>
     <div class="lvl"><i></i></div><div class="lvl-txt"></div>
     <div class="center" style="margin-top:6px"><button class="btn ghost" id="btn-stop" style="flex:0 0 auto;padding:6px 14px;font-size:13px">やめる</button><button class="btn ghost" id="btn-simul" style="flex:0 0 auto;padding:6px 14px;font-size:13px"></button></div>
   </div>
 
   <div class="card" id="pd" hidden>
-    <div class="step">クリア！</div>
+    <div class="clearhead"><div class="step">クリア！</div>
     <h2 id="pd-title">ステージ1 単音、クリア</h2>
-    <div class="stars" id="pd-stars"><span>★</span><span>★</span><span>★</span></div>
+    <div class="stars" id="pd-stars"><span>★</span><span>★</span><span>★</span></div></div>
     <ul class="result" id="pd-list"></ul>
     <p class="lead" id="pd-msg"></p>
     <div class="coach" id="pd-coach" hidden></div>
@@ -229,7 +236,7 @@ details{margin-top:8px}summary{color:var(--sub);font-size:14px;cursor:pointer}
     </div>
     <div class="sub" id="p-cents">&nbsp;</div>
     <div class="lvl"><i></i></div><div class="lvl-txt"></div>
-    <div class="row" style="margin-top:10px"><button class="btn" id="btn-tuner-mic">🎤 はかる</button></div>
+    <div class="row" style="margin-top:10px"><button class="btn" id="btn-tuner-mic">はかる</button></div>
     <p class="hint">いちばん近い音の名前と、そこからのずれ。針の真ん中がぴったり。左右の端で半音の半分です。</p>
   </div>
 </section>
@@ -243,7 +250,7 @@ details{margin-top:8px}summary{color:var(--sub);font-size:14px;cursor:pointer}
     <div class="kv"><span>いちばん高い声</span><b id="r-high">—</b></div>
     <div class="kv"><span>音域のひろさ</span><b id="r-span">—</b></div>
     <div class="bar"><i id="r-bar"></i></div>
-    <div class="row" style="margin-top:10px"><button class="btn sec" id="btn-low">🎤 低い声</button><button class="btn sec" id="btn-high">🎤 高い声</button></div>
+    <div class="row" style="margin-top:10px"><button class="btn sec" id="btn-low">低い声</button><button class="btn sec" id="btn-high">高い声</button></div>
     <div class="lvl"><i></i></div><div class="lvl-txt"></div>
     <p class="sub" id="r-msg"></p>
   </div>
@@ -254,16 +261,16 @@ details{margin-top:8px}summary{color:var(--sub);font-size:14px;cursor:pointer}
 </main>
 
 <nav>
-  <button class="on" data-screen="screen-practice"><span class="ic">🎯</span>れんしゅう</button>
-  <button data-screen="screen-tuner"><span class="ic">📈</span>ピッチ計</button>
-  <button data-screen="screen-range"><span class="ic">📏</span>音域</button>
+  <button class="on" data-screen="screen-practice"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg></span>れんしゅう</button>
+  <button data-screen="screen-tuner"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M2 12h4l3-7 5 14 3-7h5"/></svg></span>ピッチ計</button>
+  <button data-screen="screen-range"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 20V4M20 20V4M4 12h16M8 9v6M16 9v6"/></svg></span>音域</button>
 </nav>
 <div class="toast" id="toast"></div>
 </div>
 
 <script>
 /* ==========================================================
-   音程チェッカー v2.6.3（2026-09-24 夕）— 1曲通しで次のフレーズのお手本を自動で鳴らさない（聞きたいときはお手本）（みかさん）／v2.6.2（2026-09-24 夕）— 練習画面を一番上から見せる（iPhoneのマイク表示の帯が、ステージの札の上にかかるだけにする）（みかさん）／v2.6.1（2026-09-24 夕）— お手本がくり返し鳴り続けるのを直す（みかさん）／v2.6（2026-09-24 夕）— iPhoneではフレーズのお手本も音声ファイルにして鳴らす（マイクのあとでも鳴るように）／判定中の「お手本を聞いたら…」の文字を消す（みかさん）／v2.5（2026-09-24 夕）— お手本の途中でマイクが戻って音が消えていたのを直す（長さ・休符こみで数える）／練習画面の説明文と設定の基準の説明を消す／メリーさんの最初のミを付点四分に（みかさん）／v2.4.1（2026-09-24 夕）— お手本を止めてすぐ判定スタートを押すと出ていたエラーを直す／エラーは日本語の一言だけ出す（みかさん）／v2.4（2026-09-24 夕）— カウントは「3・2・1・スタート」で1小節、その次の拍から歌い出し・判定・縦の棒（みかさん）／v2.3（2026-09-24 夕）— 今どこを歌うかの縦の棒（テンポで右へ）／「聞く」ボタンを外す／iPhoneで判定のあとお手本が鳴らない件（いつも1秒待つ）／歌い出しの遅れは1.5拍まで（みかさん）／v2.2（2026-09-24 夕）— 合格の幅は設定の中だけに（高さとタイミングの基準を言葉で）／テンポも判定（スタートの拍から、音ごとの歌い出しのずれ）／グラフを時間どおりに描いてずれが見えるように・色はその時刻の音との差／iPhoneでマイクが戻るのを待ってから数える（みかさん）／v2.1（2026-09-24 午後）— 半音となりの音（ミ→ファ）を取り違えない／練習画面で合格の幅を変えられる／カウントは「3・2・1・スタート」（4拍子）／「2・1・スタート」（3拍子）でスタートの拍から歌う（みかさん）／v2.0（2026-09-24 午後）— 判定スタートのあと1・2・3と数えてから歌い出す／八分の同じ音をつなげて歌っても隣の音と取り違えない（探す幅150セント）／1フレーズ練習のあと「次のフレーズへ」／もう一回でも長さと休符を保つ（みかさん）／v1.9（2026-09-24 午後）— お手本を途中で止める／「いっしょにやる」→「挑戦する」／判定スタートを画面の下に貼りつける／合格の幅を広げる（80・50・25）／休符のあるフレーズは音が出そろうまで3秒待つ（みかさん）／v1.8（2026-09-24 昼）— 曲を選んだら「1曲通して歌う」と「1フレーズだけ練習（フレーズを選ぶ）」を分けて出す／休符で歌い終わりと見なさない／休符をはさむ同じ音は1本にのばしても数えない（1音でクリアになる不具合）／最後の音の休符でお手本がのびすぎていたのを直す（みかさん）／v1.7（2026-09-24 昼）— 3曲を楽譜どおりに作り直し（2小節で1フレーズ・小節線・音の長さを丸の幅で・メリーさんの二分と全音符）（みかさん「楽譜を基準に」）／v1.6（2026-09-24）— 休符（かえるのうた3フレーズ目＝ド・休・ド・休…をお手本も表示も）／1フレーズだけの練習でも音の長さと休符を持っていく／エッジボイスなどの一瞬のガリッを捨てる（3点続いたときだけ採る・出だしのオクターブは5点の真ん中）（みかさん）／v1.5（2026-09-23 昼）— 同じ高さが続く音（ドドドド）を切れ目で4つに聞こえるように／プリセットに音の長さ（かえるのうた後半の八分音符・各フレーズ終わりの二分音符）／判定も息継ぎで音を数え、伸ばして歌った同音も落とさない（みかさん）／v1.4（2026-09-23）— 「聞く」画面に⬇⬆1オクターブと「高さを決め直す」／「聞く」と「いっしょにやる」を分ける（聞かなくても進める・練習画面でお手本を勝手に鳴らさない）／結果を「◯／✕ 合わなかった: …」で残す／プリセット3曲を1曲通しで（フレーズごとに合ったら次へ）／v1.3（2026-09-22夜）— ボタン名「判定スタート」・フレーズのお手本を途切れなくつなげて鳴らす（1つの音源で高さだけ切り替える）／v1.2（2026-09-22夕）— 「🎤 歌う」ボタン: 押すまで測らない（出遅れて次の音の枠で弾かれる問題）。お手本と横並び・やめるは下の小ボタンへ／v1.1（2026-09-22夕）— フレーズのお手本を1音0.65秒に（単音1.3秒の半分・16分のイメージ）、人の判定も短く（最短0.12秒・歌い終わり0.7秒）／v1.0（2026-09-22昼）— 2音以上はフレーズモード（お手本1音1.3秒→つづけて歌う→歌い終わりにまとめて判定・階段グラフ）／v0.9=保持0.5秒／v0.8=ステージ2を3段・合格の幅3段階／v0.7（2026-09-21夜）— 軌跡・保持ゲージ・入り方の分析・星3段階・連続日数（みかさん「可視化から発生の改善へ」）。v0.6=すごろく 単音→音階→メロディ
+   音程チェッカー v2.7（2026-09-24 夜）— 見た目を案Cに（角ゴシック・明るい地・コーラルの操作・緑の合格・青の目標／ダークモードの端末だけ濃い地／見出し「その音、合ってる？」／ボタンの絵文字を外す）（みかさん「OKこれで行きましょう」）／v2.6.3（2026-09-24 夕）— 1曲通しで次のフレーズのお手本を自動で鳴らさない（聞きたいときはお手本）（みかさん）／v2.6.2（2026-09-24 夕）— 練習画面を一番上から見せる（iPhoneのマイク表示の帯が、ステージの札の上にかかるだけにする）（みかさん）／v2.6.1（2026-09-24 夕）— お手本がくり返し鳴り続けるのを直す（みかさん）／v2.6（2026-09-24 夕）— iPhoneではフレーズのお手本も音声ファイルにして鳴らす（マイクのあとでも鳴るように）／判定中の「お手本を聞いたら…」の文字を消す（みかさん）／v2.5（2026-09-24 夕）— お手本の途中でマイクが戻って音が消えていたのを直す（長さ・休符こみで数える）／練習画面の説明文と設定の基準の説明を消す／メリーさんの最初のミを付点四分に（みかさん）／v2.4.1（2026-09-24 夕）— お手本を止めてすぐ判定スタートを押すと出ていたエラーを直す／エラーは日本語の一言だけ出す（みかさん）／v2.4（2026-09-24 夕）— カウントは「3・2・1・スタート」で1小節、その次の拍から歌い出し・判定・縦の棒（みかさん）／v2.3（2026-09-24 夕）— 今どこを歌うかの縦の棒（テンポで右へ）／「聞く」ボタンを外す／iPhoneで判定のあとお手本が鳴らない件（いつも1秒待つ）／歌い出しの遅れは1.5拍まで（みかさん）／v2.2（2026-09-24 夕）— 合格の幅は設定の中だけに（高さとタイミングの基準を言葉で）／テンポも判定（スタートの拍から、音ごとの歌い出しのずれ）／グラフを時間どおりに描いてずれが見えるように・色はその時刻の音との差／iPhoneでマイクが戻るのを待ってから数える（みかさん）／v2.1（2026-09-24 午後）— 半音となりの音（ミ→ファ）を取り違えない／練習画面で合格の幅を変えられる／カウントは「3・2・1・スタート」（4拍子）／「2・1・スタート」（3拍子）でスタートの拍から歌う（みかさん）／v2.0（2026-09-24 午後）— 判定スタートのあと1・2・3と数えてから歌い出す／八分の同じ音をつなげて歌っても隣の音と取り違えない（探す幅150セント）／1フレーズ練習のあと「次のフレーズへ」／もう一回でも長さと休符を保つ（みかさん）／v1.9（2026-09-24 午後）— お手本を途中で止める／「いっしょにやる」→「挑戦する」／判定スタートを画面の下に貼りつける／合格の幅を広げる（80・50・25）／休符のあるフレーズは音が出そろうまで3秒待つ（みかさん）／v1.8（2026-09-24 昼）— 曲を選んだら「1曲通して歌う」と「1フレーズだけ練習（フレーズを選ぶ）」を分けて出す／休符で歌い終わりと見なさない／休符をはさむ同じ音は1本にのばしても数えない（1音でクリアになる不具合）／最後の音の休符でお手本がのびすぎていたのを直す（みかさん）／v1.7（2026-09-24 昼）— 3曲を楽譜どおりに作り直し（2小節で1フレーズ・小節線・音の長さを丸の幅で・メリーさんの二分と全音符）（みかさん「楽譜を基準に」）／v1.6（2026-09-24）— 休符（かえるのうた3フレーズ目＝ド・休・ド・休…をお手本も表示も）／1フレーズだけの練習でも音の長さと休符を持っていく／エッジボイスなどの一瞬のガリッを捨てる（3点続いたときだけ採る・出だしのオクターブは5点の真ん中）（みかさん）／v1.5（2026-09-23 昼）— 同じ高さが続く音（ドドドド）を切れ目で4つに聞こえるように／プリセットに音の長さ（かえるのうた後半の八分音符・各フレーズ終わりの二分音符）／判定も息継ぎで音を数え、伸ばして歌った同音も落とさない（みかさん）／v1.4（2026-09-23）— 「聞く」画面に⬇⬆1オクターブと「高さを決め直す」／「聞く」と「いっしょにやる」を分ける（聞かなくても進める・練習画面でお手本を勝手に鳴らさない）／結果を「◯／✕ 合わなかった: …」で残す／プリセット3曲を1曲通しで（フレーズごとに合ったら次へ）／v1.3（2026-09-22夜）— ボタン名「判定スタート」・フレーズのお手本を途切れなくつなげて鳴らす（1つの音源で高さだけ切り替える）／v1.2（2026-09-22夕）— 「歌う」ボタン: 押すまで測らない（出遅れて次の音の枠で弾かれる問題）。お手本と横並び・やめるは下の小ボタンへ／v1.1（2026-09-22夕）— フレーズのお手本を1音0.65秒に（単音1.3秒の半分・16分のイメージ）、人の判定も短く（最短0.12秒・歌い終わり0.7秒）／v1.0（2026-09-22昼）— 2音以上はフレーズモード（お手本1音1.3秒→つづけて歌う→歌い終わりにまとめて判定・階段グラフ）／v0.9=保持0.5秒／v0.8=ステージ2を3段・合格の幅3段階／v0.7（2026-09-21夜）— 軌跡・保持ゲージ・入り方の分析・星3段階・連続日数（みかさん「可視化から発生の改善へ」）。v0.6=すごろく 単音→音階→メロディ
    ピッチ検出は「声の育成日記」の framePitchACF（自己相関法）を流用。端末内で完結。
    ========================================================== */
 const IOS = /iPhone|iPad|iPod/.test(navigator.userAgent);   // 9/21 12周目: 定義より前で使っていて読み込み時に落ち、全ボタンが死んでいた → 先頭へ
@@ -292,7 +299,7 @@ function save() { try { localStorage.setItem(KEY, JSON.stringify(store)); } catc
 if (store.tol === 30) store.tol = 50; else if (store.tol === 10) store.tol = 25; else if (store.tol === 50 && !store.tol2) store.tol = 80; store.tol2 = 1;
 CONFIG.okCents = store.tol || 50; CONFIG.nearCents = Math.max(CONFIG.okCents + 30, 60);
 /* 9/21 表示は「移動ド」: ♭♯で高さをずらしても、子どもに見せる名前は常にドレミファソ（絶対音名は小さく添える）。
-   v0.6までは noteJP(絶対) で出していたので、ドをシに下げると「シ ド♯ レ♯ ミ ファ♯」と表示されていた */
+   v0.6までは noteJP(絶対) で出していたので、ドをシに下げると「シ ドレミ ファ♯」と表示されていた */
 const DEG_JP = { 0: 'ド', 2: 'レ', 4: 'ミ', 5: 'ファ', 7: 'ソ', 9: 'ラ', 11: 'シ', 12: 'ド↑' };
 function degJP(d) { return DEG_JP[d] !== undefined ? DEG_JP[d] : noteJP(store.startMidi + d); }
 
@@ -361,7 +368,7 @@ document.addEventListener('visibilitychange', () => {
   if (mic.ctx && mic.ctx.state !== 'running') mic.ctx.resume().catch(() => {});
   if (mic.wasOn) { mic.wasOn = false; if (pr.active) micStart(); }
 });
-if (IOS) { document.getElementById('ios-note').hidden = false; document.getElementById('pc-sub').textContent = 'お手本が鳴ったら、同じ高さで声をのばします。もう一度聞きたいときは「🔈 もう一度お手本」'; }
+if (IOS) { document.getElementById('ios-note').hidden = false; document.getElementById('pc-sub').textContent = 'お手本が鳴ったら、同じ高さで声をのばします。もう一度聞きたいときは「もう一度お手本」'; }
 document.getElementById('btn-soundtest').addEventListener('click', () => { ensureCtx(); playTone(midiToHz(60), 1.3, true); toast('「うー」が1.3秒鳴ります。聞こえなければ、本体横のスイッチと音量を確認してください'); });
 function onPitch(fn) { mic.listeners.add(fn); } function offPitch(fn) { mic.listeners.delete(fn); }
 
@@ -479,7 +486,7 @@ function centsToPct(c) { const a = Math.min(Math.abs(c), 700); const w = a <= 10
 function levelWord(c) { const a = Math.abs(c); if (a <= CONFIG.okCents) return ['ok', 'ぴったり！ そのまま…']; if (a <= CONFIG.nearCents) return ['near', c > 0 ? '近い。ほんの少し下げて' : '近い。ほんの少し上げて']; if (a <= 250) return ['far', c > 0 ? '少し高い ↓' : '少し低い ↑']; return ['far', c > 0 ? 'ずいぶん高い ↓↓' : 'ずいぶん低い ↑↑']; }
 document.querySelectorAll('nav button').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.screen)));
 function switchTab(id) { document.querySelectorAll('.screen').forEach(s => s.classList.toggle('active', s.id === id)); document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.screen === id)); stopTone(); }
-function show(id) { ['pa', 'pb', 'pm', 'pc', 'pd'].forEach(x => document.getElementById(x).hidden = x !== id); }
+function show(id) { ['pa', 'pb', 'pm', 'pc', 'pd'].forEach(x => document.getElementById(x).hidden = x !== id); document.getElementById('catch').hidden = (id === 'pc' || id === 'pd'); }
 
 /* ==========================================================
    れんしゅう: A 自分の高さ → B 聞く → C いっしょに → D できた
@@ -505,13 +512,13 @@ document.getElementById('btn-voice').addEventListener('click', async () => {
     if (!enough && !timeout) return;
     clearInterval(tick); offPitch(fn); b.disabled = false;
     if (hzs.length < 12) {
-      b.className = 'btn'; b.textContent = '🎤 もう一度「あー」';
+      b.className = 'btn'; b.textContent = 'もう一度「あー」';
       err.textContent = heard > 1000 ? '声は聞こえていますが、高さが取れませんでした。「あー」と3秒のばしてください' : '声が拾えませんでした。スマホを口の近くにして、「あー」とのばしてください';
       msg.textContent = ' '; return;
     }
     const s = hzs.slice().sort((a, b) => a - b); const med = s[Math.floor(s.length / 2)]; const m = Math.round(hzToMidiF(med));
     store.startMidi = nearestC(m); save();
-    b.className = 'btn'; b.textContent = '🎤 「あー」を3秒'; b.parentElement.hidden = true; document.getElementById('pa-redo').hidden = false;
+    b.className = 'btn'; b.textContent = '「あー」を3秒'; b.parentElement.hidden = true; document.getElementById('pa-redo').hidden = false;
     msg.textContent = `録れました。いまの声は ${noteJP(m)}${noteEN(m)} くらい。ドレミは ${noteJP(store.startMidi)}${noteEN(store.startMidi)} から始めます`;
     document.getElementById('pa-next').hidden = false;
   }, 100);
@@ -558,7 +565,7 @@ document.querySelectorAll('#pm .presets button').forEach(b => b.addEventListener
   const phrases = b.dataset.m.split('/').map(x => { const raw = x.split(','); const bars = []; const toks = []; raw.forEach(t => { if (t === '|') { if (toks.length) bars[toks.length - 1] = true; } else toks.push(t.split(':')); }); const arr = toks.map(t => Number(t[0])); arr.bars = toks.map((_, i) => !!bars[i]); const pl = t => (t[1] || '1').split('+').map(Number); arr.lens = toks.map(t => pl(t)[0] + (pl(t)[1] || 0)); arr.rests = toks.map(t => pl(t)[1] || 0); return arr; });   /* 9/24 休符: 「0:1+1」＝1拍鳴らして1拍休む（lens は休みこみの長さ） */
   pr.songPick = { name: b.textContent.trim(), phrases, meter: +(b.dataset.meter || 4) };
   document.querySelectorAll('#pm .presets button').forEach(x => x.classList.toggle('on', x === b));
-  const row = document.getElementById('song-row'); row.hidden = false; document.getElementById('btn-song-go').textContent = `🎵 「${pr.songPick.name}」を1曲通して歌う（${phrases.length}フレーズ）`;
+  const row = document.getElementById('song-row'); row.hidden = false; document.getElementById('btn-song-go').textContent = `「${pr.songPick.name}」を1曲通して歌う（${phrases.length}フレーズ）`;
   const chips = document.getElementById('phrase-chips'); chips.innerHTML = '';
   phrases.forEach((ph0, k) => { const c = document.createElement('button'); c.innerHTML = `<b>フレーズ${k + 1}</b>` + ph0.map((d, i) => degJP(d) + (ph0.rests && ph0.rests[i] ? '　' : '') + (ph0.bars && ph0.bars[i] ? ' ｜ ' : '')).join(''); c.addEventListener('click', () => { pr.song = null; pr.phrasePick = { phrases, idx: k, meter: pr.songPick.meter }; buildTargets(ph0); renderB(); show('pb'); }); chips.appendChild(c); });
 }));
@@ -580,7 +587,7 @@ function renderB() {
   const lvBox = document.getElementById('pb-levels'), L = levelsOf(pr.stage); lvBox.hidden = !L; lvBox.innerHTML = '';
   if (L) L.forEach((lv, i) => { const b = document.createElement('button'); const st = starsOf(pr.stage, i); b.textContent = `${i + 1} ${lv.name}`; const ss = document.createElement('span'); ss.className = 'st'; ss.textContent = '★'.repeat(st); b.appendChild(ss); b.className = i === pr.level ? 'on' : ''; const locked = i > 0 && !starsOf(pr.stage, i - 1); if (locked) b.style.opacity = '.5';
     b.addEventListener('click', () => { if (locked) { toast(`先に「${L[i - 1].name}」をクリア`); return; } goStage(pr.stage, i); }); lvBox.appendChild(b); }); document.getElementById('pb-title').textContent = pr.targets.length === 1 ? `「${degJP(pr.degrees[0])}」を、聞いてみましょう` : 'まず、聞いてみましょう';
-  document.getElementById('btn-b-next').disabled = false; const bl = document.getElementById('btn-listen'); bl.disabled = false; bl.textContent = '🔈 聞く';
+  document.getElementById('btn-b-next').disabled = false; const bl = document.getElementById('btn-listen'); bl.disabled = false; bl.textContent = '聞く';
 }
 document.getElementById('btn-listen').addEventListener('click', () => {
   ensureCtx(); const b = document.getElementById('btn-listen'); b.disabled = true;
@@ -589,7 +596,7 @@ document.getElementById('btn-listen').addEventListener('click', () => {
   const lensB = lensOf(), offB = lenOffsets(lensB).offs;
   pr.targets.forEach((m, i) => setTimeout(() => { spans.forEach(s => s.className = ''); spans[i].className = 'cur'; }, offB[i] * gap));
   const total = playSeq(pr.targets, gap, lensB, pr.rests);
-  setTimeout(() => { spans.forEach(s => s.className = 'done'); b.disabled = false; b.textContent = '🔈 もう一度聞く'; document.getElementById('btn-b-next').disabled = false; }, total + 100);
+  setTimeout(() => { spans.forEach(s => s.className = 'done'); b.disabled = false; b.textContent = 'もう一度聞く'; document.getElementById('btn-b-next').disabled = false; }, total + 100);
 });
 document.getElementById('btn-lower').addEventListener('click', () => { store.startMidi = clamp(store.startMidi - 1, 36, 84); save(); buildTargets(pr.degrees); renderB(); });
 document.getElementById('btn-higher').addEventListener('click', () => { store.startMidi = clamp(store.startMidi + 1, 36, 84); save(); buildTargets(pr.degrees); renderB(); });
@@ -608,7 +615,7 @@ async function startC() {
   ensureCtx(); if (!(await micStart())) return;
   show('pc'); window.scrollTo(0, 0);   /* 9/24 みかさん「iPhoneは上に『マイクへのアクセスが許可されています』が出て、大事なところを隠す」→ 練習画面は一番上から見せる。上のステージの札がその帯の下に来て、題名・音・グラフ・ボタンは隠れない */
   document.getElementById('pc-step').textContent = stageLabel(); pr.active = true; pr.armed = false; renderSing(); pr.okSince = 0; pr.smooth = null; pr.tries = 0; tr.samples.length = 0; phraseReset(); renderC(); onPitch(cTick);
-  /* 9/23 みかさん「毎回聞くを押さないと次が動かない・いっしょにやるを押したらまた見本が鳴る」→ この画面に入ってもお手本は鳴らさない。鳴るのは「🔈 お手本」を押したときと、単音で合って次の音に進むときだけ（5秒ごとの鳴らし直しもやめた） */
+  /* 9/23 みかさん「毎回聞くを押さないと次が動かない・いっしょにやるを押したらまた見本が鳴る」→ この画面に入ってもお手本は鳴らさない。鳴るのは「お手本」を押したときと、単音で合って次の音に進むときだけ（5秒ごとの鳴らし直しもやめた） */
   pr.lastResult = null; clearInterval(pr.replayTimer);
   /* 9/24 みかさん「お手本を聞いたら判定スタート、の文字もいらない」→ 説明文は出さない */
 }
@@ -646,36 +653,36 @@ function traceCtx() {
   return tr.ctx;
 }
 function yOf(c) { return tr.h * (0.5 - centsToPct(c) / 100); }
-function colorOf(c) { const a = Math.abs(c); return a <= CONFIG.okCents ? '#2E8B57' : a <= CONFIG.nearCents ? '#D99A1E' : '#C0504D'; }
+function colorOf(c) { const a = Math.abs(c); return a <= CONFIG.okCents ? '#3DA877' : a <= CONFIG.nearCents ? '#E0A93B' : '#D9674A'; }
 function drawTrace(nowT, cur, holdFrac) {
   const ctx = traceCtx(); if (!ctx) return; const w = tr.w, h = tr.h; ctx.clearRect(0, 0, w, h);
   const y1 = yOf(CONFIG.okCents), y2 = yOf(-CONFIG.okCents), n1 = yOf(CONFIG.nearCents), n2 = yOf(-CONFIG.nearCents);
-  ctx.fillStyle = 'rgba(217,154,30,.10)'; ctx.fillRect(0, n1, w, n2 - n1);
-  ctx.fillStyle = 'rgba(46,139,87,.20)'; ctx.fillRect(0, y1, w, y2 - y1);
-  ctx.strokeStyle = '#2E8B57'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(0, h / 2); ctx.lineTo(w, h / 2); ctx.stroke();
-  ctx.fillStyle = '#2E8B57'; ctx.font = 'bold 20px -apple-system, "Hiragino Sans", sans-serif'; ctx.textAlign = 'left'; ctx.fillText(degJP(pr.degrees[pr.idx]), 12, h / 2 - 10);
+  ctx.fillStyle = 'rgba(224,169,59,.10)'; ctx.fillRect(0, n1, w, n2 - n1);
+  ctx.fillStyle = 'rgba(73,186,206,.22)'; ctx.fillRect(0, y1, w, y2 - y1);
+  ctx.strokeStyle = '#3DA877'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(0, h / 2); ctx.lineTo(w, h / 2); ctx.stroke();
+  ctx.fillStyle = '#3DA877'; ctx.font = 'bold 20px -apple-system, "Hiragino Sans", sans-serif'; ctx.textAlign = 'left'; ctx.fillText(degJP(pr.degrees[pr.idx]), 12, h / 2 - 10);
   const x0 = w * LEAD, pxPerMs = x0 / TRACE_MS;
   ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; let prev = null;
   for (const s of tr.samples) { if (s.c === null) { prev = null; continue; } const x = x0 - (nowT - s.t) * pxPerMs; if (x < 0) { prev = null; continue; } const y = yOf(s.c); if (prev) { ctx.strokeStyle = colorOf(s.c); ctx.beginPath(); ctx.moveTo(prev.x, prev.y); ctx.lineTo(x, y); ctx.stroke(); } prev = { x, y }; }
-  if (cur === null) { ctx.fillStyle = '#E1DDD3'; ctx.beginPath(); ctx.arc(x0, h / 2, 15, 0, Math.PI * 2); ctx.fill(); return; }
+  if (cur === null) { ctx.fillStyle = '#E9DDD7'; ctx.beginPath(); ctx.arc(x0, h / 2, 15, 0, Math.PI * 2); ctx.fill(); return; }
   const y = yOf(cur);
-  if (holdFrac > 0) { ctx.strokeStyle = '#2E8B57'; ctx.lineWidth = 6; ctx.beginPath(); ctx.arc(x0, y, 25, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * holdFrac); ctx.stroke(); }
+  if (holdFrac > 0) { ctx.strokeStyle = '#3DA877'; ctx.lineWidth = 6; ctx.beginPath(); ctx.arc(x0, y, 25, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * holdFrac); ctx.stroke(); }
   ctx.fillStyle = colorOf(cur); ctx.beginPath(); ctx.arc(x0, y, 15, 0, Math.PI * 2); ctx.fill();
 }
 function pushSample(t, c) { tr.samples.push({ t, c }); while (tr.samples.length && t - tr.samples[0].t > TRACE_MS + 500) tr.samples.shift(); }
 
 function cTick(hz) {
-  if (!pr.armed) {   // 「🎤 歌う」を押すまでは測らない（9/22 夕・出遅れて次の音の枠で弾かれるのを防ぐ）
+  if (!pr.armed) {   // 「歌う」を押すまでは測らない（9/22 夕・出遅れて次の音の枠で弾かれるのを防ぐ）
     const t = performance.now(), w = document.getElementById('pc-word'), now = document.getElementById('pc-now');
     /* 9/23 みかさん「クリアできなかったとき『判定スタートを押してね』しか出ず、失敗か成功か分からない」→ 前回の結果（✕ 合わなかった: レが低い…）を、次に判定スタートを押すまで消さない */
-    if (pr.lastResult) { w.className = 'word ' + (pr.lastResult.ok ? 'ok' : 'far'); w.textContent = pr.lastResult.text; now.textContent = t < mic.muteUntil ? '🔈 お手本…' : '▶ 判定スタートで、もう一度'; }
-    else { w.className = 'word'; w.textContent = t < mic.muteUntil ? '🔈 お手本' : ' '; now.textContent = ' '; }
+    if (pr.lastResult) { w.className = 'word ' + (pr.lastResult.ok ? 'ok' : 'far'); w.textContent = pr.lastResult.text; now.textContent = t < mic.muteUntil ? 'お手本…' : '判定スタートで、もう一度'; }
+    else { w.className = 'word'; w.textContent = t < mic.muteUntil ? 'お手本' : ' '; now.textContent = ' '; }
     if (seqMode()) drawPhrase(t); else { pr.okSince = 0; pr.smooth = null; pushSample(t, null); drawTrace(t, null, 0); }
     return;
   }
   if (seqMode()) { phraseTick(hz, performance.now()); return; }
   const w = document.getElementById('pc-word'), now = document.getElementById('pc-now'), t = performance.now();
-  if (!hz) { pr.smooth = null; w.className = 'word'; w.textContent = t < mic.muteUntil ? '🔈 お手本' : '声を出してみましょう'; now.textContent = ' '; pr.okSince = 0; pushSample(t, null); drawTrace(t, null, 0); return; }
+  if (!hz) { pr.smooth = null; w.className = 'word'; w.textContent = t < mic.muteUntil ? 'お手本' : '声を出してみましょう'; now.textContent = ' '; pr.okSince = 0; pushSample(t, null); drawTrace(t, null, 0); return; }
   const target = pr.targets[pr.idx]; const mf = hzToMidiF(hz);
   let diff = (mf - target) * 100, octs = 0;
   const octDiff = diff - Math.round(diff / 1200) * 1200;
@@ -701,7 +708,7 @@ function nearestCents(mf) { let best = 1e9, bi = 0; pr.targets.forEach((tg, i) =
 function phraseTick(hz, t) {
   const w = document.getElementById('pc-word'), now = document.getElementById('pc-now'), dt = ph.lastT ? Math.min(t - ph.lastT, 100) : 16; ph.lastT = t;
   if (ph.result) { drawPhrase(t); return; }
-  if (t < mic.muteUntil) { w.className = 'word'; w.textContent = '🔈 お手本'; now.textContent = ' '; drawPhrase(t); return; }
+  if (t < mic.muteUntil) { w.className = 'word'; w.textContent = 'お手本'; now.textContent = ' '; drawPhrase(t); return; }
   /* 9/24 みかさん「エッジボイスみたいなガリッとした音が入ると、急に音程が高くなったり低くなったりする」
      → ①オクターブ合わせは出だし1点でなく最初の5点の真ん中で決める ②前の音から3半音以上飛んだ点は、3点続いて同じ高さのときだけ採る（ガリッの一瞬は捨てる）
        ③どの目標音からも7半音以上離れた点は数えない */
@@ -786,7 +793,7 @@ function evaluatePhrase() {
       /* 9/23 1曲通し: フレーズが合ったら、次のフレーズのお手本が鳴って続く。最後のフレーズまで合ったら1曲クリア */
       pr.songResults = (pr.songResults || []).concat(pr.results); pr.songTries = (pr.songTries || 0) + pr.tries;
       w.className = 'word ok'; w.textContent = `フレーズ${pr.songIdx + 1}、合った！`; now.textContent = 'つぎのフレーズ…'; document.getElementById('pc-prog').style.width = Math.round((pr.songIdx + 1) / pr.song.phrases.length * 100) + '%';
-      setTimeout(() => { if (!pr.active) return; pr.songIdx++; buildTargets(pr.song.phrases[pr.songIdx]); pr.armed = false; if (IOS) micPause(); pr.tries = 0; pr.lastResult = null; phraseReset(); renderSing(); renderC(); document.getElementById('pc-step').textContent = stageLabel(); /* 9/24 みかさん「1曲通すときは流れで歌えるので、次のフレーズのお手本は鳴らさなくていい。聞き直したいときはお手本を押す」 */ document.getElementById('pc-word').textContent = 'つぎのフレーズ'; document.getElementById('pc-now').textContent = '▶ 判定スタートで、つづけて'; }, 1000);
+      setTimeout(() => { if (!pr.active) return; pr.songIdx++; buildTargets(pr.song.phrases[pr.songIdx]); pr.armed = false; if (IOS) micPause(); pr.tries = 0; pr.lastResult = null; phraseReset(); renderSing(); renderC(); document.getElementById('pc-step').textContent = stageLabel(); /* 9/24 みかさん「1曲通すときは流れで歌えるので、次のフレーズのお手本は鳴らさなくていい。聞き直したいときはお手本を押す」 */ document.getElementById('pc-word').textContent = 'つぎのフレーズ'; document.getElementById('pc-now').textContent = '判定スタートで、つづけて'; }, 1000);
       return;
     }
     w.className = 'word ok'; w.textContent = pr.song ? '1曲、ぜんぶ合った！' : 'ぜんぶ合った！'; now.textContent = ' '; document.getElementById('pc-prog').style.width = '100%';
@@ -795,9 +802,9 @@ function evaluatePhrase() {
   } else {
     pr.tries++;
     const miss = per.filter(x => !x.ok).map(x => degJP(x.deg) + (x.timing === 'start' ? 'の歌い出しが遅い' : x.timing === 'late' ? 'が遅れた' : x.timing === 'early' ? 'が早い' : x.cents === null ? 'が抜けた' : x.cents < 0 ? 'が低い' : 'が高い'));
-    /* 9/23 みかさん「失敗したのか成功したのかいまいち分からなかった」→ 結果を1行で残す。お手本は自動では鳴らし直さない（「🔈 お手本」を押したときだけ） */
+    /* 9/23 みかさん「失敗したのか成功したのかいまいち分からなかった」→ 結果を1行で残す。お手本は自動では鳴らし直さない（「お手本」を押したときだけ） */
     pr.lastResult = { ok: false, text: '✕ 合わなかった: ' + miss.slice(0, 3).join('・') + (miss.length > 3 ? '…' : '') };
-    w.className = 'word far'; w.textContent = pr.lastResult.text; now.textContent = '▶ 判定スタートで、もう一度';
+    w.className = 'word far'; w.textContent = pr.lastResult.text; now.textContent = '判定スタートで、もう一度';
     document.querySelectorAll('#pc-notes span').forEach((sp, i) => sp.classList.toggle('miss', !per[i].ok));
     pr.armed = false; renderSing();
   }
@@ -808,10 +815,10 @@ function drawPhrase(nowT) {
   const yM = m => top + (h - top - bot) * (1 - (m - lo) / (hi - lo)); const lensD = lensOf(), { offs: offD, total: unitsD } = lenOffsets(lensD), unitW = w / unitsD; const ok = CONFIG.okCents / 100, near = CONFIG.nearCents / 100;
   pr.targets.forEach((tg, i) => {
     const x = offD[i] * unitW, slotW = lensD[i] * unitW, res = ph.result ? ph.result.per[i] : null;
-    ctx.fillStyle = 'rgba(217,154,30,.08)'; ctx.fillRect(x + 2, yM(tg + near), slotW - 4, yM(tg - near) - yM(tg + near));
-    ctx.fillStyle = ph.cueSlot === i ? 'rgba(31,42,43,.35)' : res ? (res.ok ? 'rgba(46,139,87,.28)' : 'rgba(192,80,77,.18)') : 'rgba(46,139,87,.18)'; ctx.fillRect(x + 2, yM(tg + ok), slotW - 4, yM(tg - ok) - yM(tg + ok));
-    ctx.strokeStyle = res && !res.ok ? '#C0504D' : '#2E8B57'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x + 2, yM(tg)); ctx.lineTo(x + slotW - 2, yM(tg)); ctx.stroke();
-    ctx.fillStyle = res && !res.ok ? '#C0504D' : '#2E8B57'; ctx.font = 'bold 15px -apple-system, "Hiragino Sans", sans-serif'; ctx.textAlign = 'center'; ctx.fillText(degJP(pr.degrees[i]), x + slotW / 2, yM(tg) - 7);
+    ctx.fillStyle = 'rgba(224,169,59,.08)'; ctx.fillRect(x + 2, yM(tg + near), slotW - 4, yM(tg - near) - yM(tg + near));
+    ctx.fillStyle = ph.cueSlot === i ? 'rgba(61,53,53,.30)' : res ? (res.ok ? 'rgba(76,188,138,.30)' : 'rgba(217,103,74,.18)') : 'rgba(73,186,206,.20)'; ctx.fillRect(x + 2, yM(tg + ok), slotW - 4, yM(tg - ok) - yM(tg + ok));
+    ctx.strokeStyle = res ? (res.ok ? '#3DA877' : '#D9674A') : '#2F9DB2'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x + 2, yM(tg)); ctx.lineTo(x + slotW - 2, yM(tg)); ctx.stroke();
+    ctx.fillStyle = res ? (res.ok ? '#3DA877' : '#D9674A') : '#2F9DB2'; ctx.font = 'bold 15px -apple-system, "Hiragino Sans", sans-serif'; ctx.textAlign = 'center'; ctx.fillText(degJP(pr.degrees[i]), x + slotW / 2, yM(tg) - 7);
     if (res && !res.ok && res.cents === null) { ctx.font = 'bold 22px -apple-system, sans-serif'; ctx.fillText('?', x + slotW / 2, yM(tg) + 26); }
   });
   if (!ph.t0 && !ph.armT) return;
@@ -821,9 +828,9 @@ function drawPhrase(nowT) {
   ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; let prev = null;
   for (const s of ph.samples) { const x = xOf(s.t), y = yM(s.m); if (prev && s.t - prev.t < 120) { ctx.strokeStyle = colAt(s); ctx.beginPath(); ctx.moveTo(prev.x, prev.y); ctx.lineTo(x, y); ctx.stroke(); } prev = { x, y, t: s.t }; }
   /* 9/24 みかさん「今ここのテンポ・この高さを歌うところ、が分かるように縦の棒を動かして」→ スタートの拍から、お手本と同じ速さで右へ進む棒 */
-  if (ph.armT && !ph.result && nowT >= ph.armT && nowT - ph.armT <= span) { const px = xOf(nowT); ctx.strokeStyle = 'rgba(31,111,115,.85)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(px, 4); ctx.lineTo(px, h - 4); ctx.stroke(); }
+  if (ph.armT && !ph.result && nowT >= ph.armT && nowT - ph.armT <= span) { const px = xOf(nowT); ctx.strokeStyle = 'rgba(232,129,91,.95)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(px, 4); ctx.lineTo(px, h - 4); ctx.stroke(); }
   if (prev && !ph.result) { ctx.fillStyle = colorOf(nearestCents(ph.samples[ph.samples.length - 1].m)[0]); ctx.beginPath(); ctx.arc(prev.x, prev.y, 12, 0, Math.PI * 2); ctx.fill(); }
-  if (ph.result) ph.result.per.forEach((res, i) => { if (!res.seg) return; ctx.strokeStyle = res.ok ? '#2E8B57' : '#C0504D'; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(xOf(res.seg.start), yM(res.seg.mean)); ctx.lineTo(xOf(res.seg.end), yM(res.seg.mean)); ctx.stroke(); });
+  if (ph.result) ph.result.per.forEach((res, i) => { if (!res.seg) return; ctx.strokeStyle = res.ok ? '#3DA877' : '#D9674A'; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(xOf(res.seg.start), yM(res.seg.mean)); ctx.lineTo(xOf(res.seg.end), yM(res.seg.mean)); ctx.stroke(); });
 }
 
 function noteStats(t) {
@@ -864,7 +871,7 @@ function finishC() {
   const list = document.getElementById('pd-list'); list.innerHTML = '';
   const row = (cells, cls) => { const li = document.createElement('li'); if (cls) li.className = cls; cells.forEach(([txt, c]) => { const sp = document.createElement(c === 'b' ? 'b' : 'span'); if (c && c !== 'b') sp.className = c; sp.textContent = txt; li.appendChild(sp); }); list.appendChild(li); };
   row([['音'], [pr.results[0] && pr.results[0].phrase ? '高さ' : '入り方'], ['揺れ', 'r'], [pr.results[0] && pr.results[0].phrase ? '回数' : '秒', 'r']], 'head');
-  pr.results.forEach(r => row([[degJP(r.deg), 'b'], [r.phrase ? (Math.abs(r.cents) <= 10 ? '✨ ど真ん中' : r.cents > 0 ? 'ほんの少し高め' : 'ほんの少し低め') : APPROACH_JP[r.approach], 'a ' + (r.phrase ? (Math.abs(r.cents) <= 10 ? 'hit' : 'x') : r.approach)], [`±${r.wobble.toFixed(0)}`, 'r'], [r.phrase ? (pr.tries === 0 ? '1回で' : `${pr.tries + 1}回目`) : r.lockSec.toFixed(1), 'r']]));
+  pr.results.forEach(r => row([[degJP(r.deg), 'b'], [r.phrase ? (Math.abs(r.cents) <= 10 ? 'ど真ん中' : r.cents > 0 ? 'ほんの少し高め' : 'ほんの少し低め') : APPROACH_JP[r.approach], 'a ' + (r.phrase ? (Math.abs(r.cents) <= 10 ? 'hit' : 'x') : r.approach)], [`±${r.wobble.toFixed(0)}`, 'r'], [r.phrase ? (pr.tries === 0 ? '1回で' : `${pr.tries + 1}回目`) : r.lockSec.toFixed(1), 'r']]));
   const avg = pr.results.reduce((a, r) => a + r.cents, 0) / pr.results.length;
   const stars = starsFor(pr.results), sk = starKey(pr.stage, pr.level); store.stars[sk] = Math.max(+store.stars[sk] || 0, stars); save(); renderStages(); markDay();
   const sp = document.querySelectorAll('#pd-stars span'); sp.forEach((s, i) => { s.className = ''; void s.offsetWidth; if (i < stars) { s.className = 'on'; s.style.animationDelay = (0.15 + i * 0.25) + 's'; } });
@@ -872,7 +879,7 @@ function finishC() {
   const nx = nextStep(); document.getElementById('btn-next-stage').hidden = !nx; document.getElementById('btn-next-stage').textContent = nx ? nx.label : '';
   /* 9/24 みかさん「フレーズ3をクリアしたら、そのままメロディのクリアになってフレーズ4に進めない」→ 1フレーズ練習のときは「次のフレーズへ」 */
   const pp = !pr.song && pr.phrasePick; pr.nextPhrase = pp && pp.idx < pp.phrases.length - 1 ? pp.idx + 1 : null;
-  if (pr.nextPhrase !== null) { const b = document.getElementById('btn-next-stage'); b.hidden = false; b.textContent = `▶ フレーズ${pr.nextPhrase + 1}へ`; document.getElementById('pd-title').textContent = `フレーズ${pp.idx + 1}、クリア`; }
+  if (pr.nextPhrase !== null) { const b = document.getElementById('btn-next-stage'); b.hidden = false; b.textContent = `フレーズ${pr.nextPhrase + 1}へ`; document.getElementById('pd-title').textContent = `フレーズ${pp.idx + 1}、クリア`; }
   document.getElementById('pd-msg').textContent = Math.abs(avg) <= 10 ? '全部、真ん中で取れています。' : avg > 0 ? '全体に、ほんの少し高めに取る傾向があります。次は「少し低め」を意識してみてください。' : '全体に、ほんの少し低めに取る傾向があります。次は「少し高め」を意識してみてください。';
   const coach = coachText(pr.results); const ce = document.getElementById('pd-coach'); ce.hidden = !coach; ce.textContent = coach;
   show('pd');
@@ -882,17 +889,17 @@ function stopCue() {
   stopTone(); try { toneAudio.pause(); } catch (e) {}
   mic.muteUntil = 0; clearTimeout(pr.cueRestore); (pr.cueTimers || []).forEach(clearTimeout); pr.cueTimers = [];
   ph.cueSlot = -1; document.querySelectorAll('#pc-notes span').forEach(sp => sp.classList.remove('play'));
-  const b = document.getElementById('btn-replay'); b.textContent = '🔈 お手本'; clearTimeout(pr.replayLabel);
+  const b = document.getElementById('btn-replay'); b.textContent = 'お手本'; clearTimeout(pr.replayLabel);
 }
 document.getElementById('btn-replay').addEventListener('click', () => {
   ensureCtx(); if (IOS && window.scrollY > 0) window.scrollTo({ top: 0, behavior: 'smooth' });
   if (performance.now() < mic.muteUntil) { stopCue(); return; }
   cueTarget();
   const b = document.getElementById('btn-replay'); b.textContent = '⏹ 止める'; clearTimeout(pr.replayLabel);
-  pr.replayLabel = setTimeout(() => { b.textContent = '🔈 お手本'; }, Math.max(300, mic.muteUntil - performance.now()));
+  pr.replayLabel = setTimeout(() => { b.textContent = 'お手本'; }, Math.max(300, mic.muteUntil - performance.now()));
 });
-/* 🎤 歌う（9/22 夕）: 押した瞬間から判定。単音は最初の音だけ押せば、合った後は自動で次へ。フレーズは1回歌うごとに押す */
-function renderSing() { const b = document.getElementById('btn-sing'); if (!b) return; b.classList.toggle('armed', !!pr.armed); b.textContent = pr.armed ? '● 判定中' : '▶ 判定スタート'; }   // 9/22 みかさん「歌うじゃなく、判定スタート」
+/* 歌う（9/22 夕）: 押した瞬間から判定。単音は最初の音だけ押せば、合った後は自動で次へ。フレーズは1回歌うごとに押す */
+function renderSing() { const b = document.getElementById('btn-sing'); if (!b) return; b.classList.toggle('armed', !!pr.armed); b.textContent = pr.armed ? '● 判定中' : '判定スタート'; }   // 9/22 みかさん「歌うじゃなく、判定スタート」
 document.getElementById('btn-sing').addEventListener('click', async () => {
   ensureCtx(); if (IOS && window.scrollY > 0) window.scrollTo({ top: 0, behavior: 'smooth' }); if (!pr.active || pr.counting) return;
   setTimeout(() => { if (pr.counting && !pr.armed) pr.counting = false; }, 8000);   // 何かで止まっても8秒で押せる状態に戻す
@@ -924,7 +931,7 @@ document.getElementById('btn-stop').addEventListener('click', () => { stopStage(
 document.getElementById('btn-again').addEventListener('click', () => { if (pr.song) { pr.songIdx = 0; pr.songResults = []; pr.songTries = 0; buildTargets(pr.song.phrases[0]); } else buildTargets(pr.src || pr.degrees); startC(); });
 document.getElementById('btn-next-stage').addEventListener('click', () => { if (pr.nextPhrase !== null && pr.nextPhrase !== undefined && pr.phrasePick) { pr.phrasePick.idx = pr.nextPhrase; pr.nextPhrase = null; buildTargets(pr.phrasePick.phrases[pr.phrasePick.idx]); renderB(); show('pb'); return; } const nx = nextStep(); if (nx) goStage(nx.stage, nx.level); });
 document.getElementById('btn-clear-stars').addEventListener('click', () => { store.stars = {}; save(); renderStages(); toast('星をリセットしました'); });
-document.getElementById('btn-reset').addEventListener('click', () => { stopStage(); restorePaText(); store.startMidi = null; save(); document.getElementById('pa-next').hidden = true; document.getElementById('pa-msg').textContent = ' '; const b = document.getElementById('btn-voice'); b.className = 'btn'; b.textContent = '🎤 「あー」を3秒'; b.parentElement.hidden = false; document.getElementById('pa-redo').hidden = true; show('pa'); });
+document.getElementById('btn-reset').addEventListener('click', () => { stopStage(); restorePaText(); store.startMidi = null; save(); document.getElementById('pa-next').hidden = true; document.getElementById('pa-msg').textContent = ' '; const b = document.getElementById('btn-voice'); b.className = 'btn'; b.textContent = '「あー」を3秒'; b.parentElement.hidden = false; document.getElementById('pa-redo').hidden = true; show('pa'); });
 document.getElementById('seg-tol').addEventListener('click', e => { if (!e.target.dataset.v) return; store.tol = +e.target.dataset.v; CONFIG.okCents = store.tol; CONFIG.nearCents = Math.max(CONFIG.okCents + 30, 60); save(); renderTol(); [...e.currentTarget.children].forEach(b => b.classList.toggle('on', b === e.target)); });
 function renderTol() { ['seg-tol'].forEach(id => { const el = document.getElementById(id); if (el) [...el.children].forEach(b => b.classList.toggle('on', +b.dataset.v === (store.tol || 50))); }); }
 renderTol();
@@ -935,7 +942,7 @@ renderTol();
 const tuner = { active: false, smooth: null };
 document.getElementById('btn-tuner-mic').addEventListener('click', async () => {
   ensureCtx(); const b = document.getElementById('btn-tuner-mic');
-  if (tuner.active) { tuner.active = false; offPitch(tunerTick); b.textContent = '🎤 はかる'; return; }
+  if (tuner.active) { tuner.active = false; offPitch(tunerTick); b.textContent = 'はかる'; return; }
   if (!(await micStart())) return; tuner.active = true; onPitch(tunerTick); b.textContent = '⏹ とめる';
 });
 function tunerTick(hz) {
@@ -982,7 +989,7 @@ renderRange();
 renderStages();
 renderStreak();
 /* 9/21「前回の高さで、つぎへ」が分かりにくい → ボタンは「はじめる」だけ。高さの説明は文のほうに */
-if (store.startMidi) { document.getElementById('pa-h2').textContent = 'きょうも、はじめましょう'; document.getElementById('pa-lead').textContent = `ドレミの高さは前回のまま（${noteJP(store.startMidi)}${noteEN(store.startMidi)} から）。変えたいときは「録り直す」。`; document.getElementById('pa-msg').textContent = ' '; document.getElementById('pa-next').hidden = false; document.getElementById('btn-a-next').textContent = '▶ はじめる'; document.getElementById('btn-voice').parentElement.hidden = true; document.getElementById('pa-redo').hidden = false; }
+if (store.startMidi) { document.getElementById('pa-h2').textContent = 'きょうも、はじめましょう'; document.getElementById('pa-lead').textContent = `ドレミの高さは前回のまま（${noteJP(store.startMidi)}${noteEN(store.startMidi)} から）。変えたいときは「録り直す」。`; document.getElementById('pa-msg').textContent = ' '; document.getElementById('pa-next').hidden = false; document.getElementById('btn-a-next').textContent = 'はじめる'; document.getElementById('btn-voice').parentElement.hidden = true; document.getElementById('pa-redo').hidden = false; }
 function isNativeApp() { return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()); }
 if ('serviceWorker' in navigator && !isNativeApp()) { navigator.serviceWorker.register('./sw.js').catch(() => {}); }
 window.__ontei = { framePitchACF, hzToMidiF, noteJP, noteEN, degJP, store, pr, tr, ph, phraseTick, evaluatePhrase, drawPhrase, phraseReset, buildTargets, startC, show, goStage, STAGES, starsFor, coachText, noteStats, drawTrace, renderC, finishC };
