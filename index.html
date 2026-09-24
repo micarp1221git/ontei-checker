@@ -149,9 +149,6 @@ details{margin-top:8px}summary{color:var(--sub);font-size:14px;cursor:pointer}
     <div class="seg" id="pb-levels" hidden style="margin:0 0 10px"></div>
     <div class="notes wrap" id="pb-notes"></div>
     <div class="row"><button class="btn sec" id="btn-listen">🔈 聞く</button><button class="btn" id="btn-b-next">挑戦する</button></div>
-    <div class="small" style="margin-top:12px">合格の幅</div>
-    <div class="seg" id="seg-tol" style="margin-top:4px"><button data-v="80">かんたん</button><button data-v="50" class="on">ふつう</button><button data-v="25">きびしい</button></div>
-    <p class="hint" style="margin-top:4px">かんたん＝半音の8割以内で合格。ふつう＝5割。きびしい＝4分の1。</p>
     <p class="hint" id="pb-how">「聞く」は聞くだけ（押さなくても進めます）。「挑戦する」で練習の画面へ。そこでは「お手本」で聞いて、「判定スタート」から歌います。</p>
     <p class="hint">高すぎる・低すぎると感じたら、半音ずつ動かせます。</p>
     <div class="row" style="margin-top:8px"><button class="btn ghost" id="btn-lower">♭ 少し低く</button><button class="btn ghost" id="btn-higher">♯ 少し高く</button></div>
@@ -195,7 +192,6 @@ details{margin-top:8px}summary{color:var(--sub);font-size:14px;cursor:pointer}
     <div class="word" id="pc-word">&nbsp;</div>
     <div class="sub" id="pc-now">&nbsp;</div>
     <!-- 9/22 夕 みかさん「判定スタートがいつか分かりにくい。出遅れるとレの枠でドを歌って弾かれる」→ 🎤 歌う ボタン。押すまで測らない。お手本と同じ大きさで横並び・グラフと一緒にスクロール無しで見える -->
-    <div class="seg" id="seg-tol2" style="margin:8px 0 0"><button data-v="80">かんたん</button><button data-v="50">ふつう</button><button data-v="25">きびしい</button></div>
     <div class="row actbar" style="margin:6px 0 4px"><button class="btn sec" id="btn-replay">🔈 お手本</button><button class="btn" id="btn-sing">▶ 判定スタート</button></div>
     <div class="center small" id="pc-sub">お手本を聞いたら「判定スタート」を押して、同じ高さで声をのばします</div>
     <div class="lvl"><i></i></div><div class="lvl-txt"></div>
@@ -214,7 +210,14 @@ details{margin-top:8px}summary{color:var(--sub);font-size:14px;cursor:pointer}
 
   <details><summary>設定</summary>
     <div class="card" style="margin-top:6px">
-      <p class="hint">合格の幅（かんたん／ふつう／きびしい）は、練習の画面の「判定スタート」の上で変えられます。スマホのマイクでは少しの揺れが常に出ます。</p>
+      <div class="small">合格の幅</div>
+      <div class="seg" id="seg-tol" style="margin-top:4px"><button data-v="80">かんたん</button><button data-v="50" class="on">ふつう</button><button data-v="25">きびしい</button></div>
+      <!-- 9/24 みかさん「かんたんでもふつうでも判断基準がいまいち分からない」→ 高さとタイミングの2つで、何が許されるかを言葉で -->
+      <ul class="hint" style="margin:6px 0 0;padding-left:1.2em;line-height:1.7">
+        <li><b>かんたん</b>：高さは、となりの音との間の8割まで。歌い出しのタイミングは、半拍ちょっとまで</li>
+        <li><b>ふつう</b>：高さは、となりの音との間の半分まで。タイミングは、半拍の少し手前まで</li>
+        <li><b>きびしい</b>：高さは、となりの音との間の4分の1まで。タイミングは、4分の1拍まで</li>
+      </ul>
       <div class="row" style="margin-top:10px"><button class="btn ghost" id="btn-reset">高さを決め直す（楽な高さの「あー」から）</button><button class="btn ghost" id="btn-clear-stars">星をリセット</button></div>
     </div>
   </details>
@@ -266,7 +269,7 @@ details{margin-top:8px}summary{color:var(--sub);font-size:14px;cursor:pointer}
 
 <script>
 /* ==========================================================
-   音程チェッカー v2.1（2026-09-24 午後）— 半音となりの音（ミ→ファ）を取り違えない／練習画面で合格の幅を変えられる／カウントは「3・2・1・スタート」（4拍子）／「2・1・スタート」（3拍子）でスタートの拍から歌う（みかさん）／v2.0（2026-09-24 午後）— 判定スタートのあと1・2・3と数えてから歌い出す／八分の同じ音をつなげて歌っても隣の音と取り違えない（探す幅150セント）／1フレーズ練習のあと「次のフレーズへ」／もう一回でも長さと休符を保つ（みかさん）／v1.9（2026-09-24 午後）— お手本を途中で止める／「いっしょにやる」→「挑戦する」／判定スタートを画面の下に貼りつける／合格の幅を広げる（80・50・25）／休符のあるフレーズは音が出そろうまで3秒待つ（みかさん）／v1.8（2026-09-24 昼）— 曲を選んだら「1曲通して歌う」と「1フレーズだけ練習（フレーズを選ぶ）」を分けて出す／休符で歌い終わりと見なさない／休符をはさむ同じ音は1本にのばしても数えない（1音でクリアになる不具合）／最後の音の休符でお手本がのびすぎていたのを直す（みかさん）／v1.7（2026-09-24 昼）— 3曲を楽譜どおりに作り直し（2小節で1フレーズ・小節線・音の長さを丸の幅で・メリーさんの二分と全音符）（みかさん「楽譜を基準に」）／v1.6（2026-09-24）— 休符（かえるのうた3フレーズ目＝ド・休・ド・休…をお手本も表示も）／1フレーズだけの練習でも音の長さと休符を持っていく／エッジボイスなどの一瞬のガリッを捨てる（3点続いたときだけ採る・出だしのオクターブは5点の真ん中）（みかさん）／v1.5（2026-09-23 昼）— 同じ高さが続く音（ドドドド）を切れ目で4つに聞こえるように／プリセットに音の長さ（かえるのうた後半の八分音符・各フレーズ終わりの二分音符）／判定も息継ぎで音を数え、伸ばして歌った同音も落とさない（みかさん）／v1.4（2026-09-23）— 「聞く」画面に⬇⬆1オクターブと「高さを決め直す」／「聞く」と「いっしょにやる」を分ける（聞かなくても進める・練習画面でお手本を勝手に鳴らさない）／結果を「◯／✕ 合わなかった: …」で残す／プリセット3曲を1曲通しで（フレーズごとに合ったら次へ）／v1.3（2026-09-22夜）— ボタン名「判定スタート」・フレーズのお手本を途切れなくつなげて鳴らす（1つの音源で高さだけ切り替える）／v1.2（2026-09-22夕）— 「🎤 歌う」ボタン: 押すまで測らない（出遅れて次の音の枠で弾かれる問題）。お手本と横並び・やめるは下の小ボタンへ／v1.1（2026-09-22夕）— フレーズのお手本を1音0.65秒に（単音1.3秒の半分・16分のイメージ）、人の判定も短く（最短0.12秒・歌い終わり0.7秒）／v1.0（2026-09-22昼）— 2音以上はフレーズモード（お手本1音1.3秒→つづけて歌う→歌い終わりにまとめて判定・階段グラフ）／v0.9=保持0.5秒／v0.8=ステージ2を3段・合格の幅3段階／v0.7（2026-09-21夜）— 軌跡・保持ゲージ・入り方の分析・星3段階・連続日数（みかさん「可視化から発生の改善へ」）。v0.6=すごろく 単音→音階→メロディ
+   音程チェッカー v2.2（2026-09-24 夕）— 合格の幅は設定の中だけに（高さとタイミングの基準を言葉で）／テンポも判定（スタートの拍から、音ごとの歌い出しのずれ）／グラフを時間どおりに描いてずれが見えるように・色はその時刻の音との差／iPhoneでマイクが戻るのを待ってから数える（みかさん）／v2.1（2026-09-24 午後）— 半音となりの音（ミ→ファ）を取り違えない／練習画面で合格の幅を変えられる／カウントは「3・2・1・スタート」（4拍子）／「2・1・スタート」（3拍子）でスタートの拍から歌う（みかさん）／v2.0（2026-09-24 午後）— 判定スタートのあと1・2・3と数えてから歌い出す／八分の同じ音をつなげて歌っても隣の音と取り違えない（探す幅150セント）／1フレーズ練習のあと「次のフレーズへ」／もう一回でも長さと休符を保つ（みかさん）／v1.9（2026-09-24 午後）— お手本を途中で止める／「いっしょにやる」→「挑戦する」／判定スタートを画面の下に貼りつける／合格の幅を広げる（80・50・25）／休符のあるフレーズは音が出そろうまで3秒待つ（みかさん）／v1.8（2026-09-24 昼）— 曲を選んだら「1曲通して歌う」と「1フレーズだけ練習（フレーズを選ぶ）」を分けて出す／休符で歌い終わりと見なさない／休符をはさむ同じ音は1本にのばしても数えない（1音でクリアになる不具合）／最後の音の休符でお手本がのびすぎていたのを直す（みかさん）／v1.7（2026-09-24 昼）— 3曲を楽譜どおりに作り直し（2小節で1フレーズ・小節線・音の長さを丸の幅で・メリーさんの二分と全音符）（みかさん「楽譜を基準に」）／v1.6（2026-09-24）— 休符（かえるのうた3フレーズ目＝ド・休・ド・休…をお手本も表示も）／1フレーズだけの練習でも音の長さと休符を持っていく／エッジボイスなどの一瞬のガリッを捨てる（3点続いたときだけ採る・出だしのオクターブは5点の真ん中）（みかさん）／v1.5（2026-09-23 昼）— 同じ高さが続く音（ドドドド）を切れ目で4つに聞こえるように／プリセットに音の長さ（かえるのうた後半の八分音符・各フレーズ終わりの二分音符）／判定も息継ぎで音を数え、伸ばして歌った同音も落とさない（みかさん）／v1.4（2026-09-23）— 「聞く」画面に⬇⬆1オクターブと「高さを決め直す」／「聞く」と「いっしょにやる」を分ける（聞かなくても進める・練習画面でお手本を勝手に鳴らさない）／結果を「◯／✕ 合わなかった: …」で残す／プリセット3曲を1曲通しで（フレーズごとに合ったら次へ）／v1.3（2026-09-22夜）— ボタン名「判定スタート」・フレーズのお手本を途切れなくつなげて鳴らす（1つの音源で高さだけ切り替える）／v1.2（2026-09-22夕）— 「🎤 歌う」ボタン: 押すまで測らない（出遅れて次の音の枠で弾かれる問題）。お手本と横並び・やめるは下の小ボタンへ／v1.1（2026-09-22夕）— フレーズのお手本を1音0.65秒に（単音1.3秒の半分・16分のイメージ）、人の判定も短く（最短0.12秒・歌い終わり0.7秒）／v1.0（2026-09-22昼）— 2音以上はフレーズモード（お手本1音1.3秒→つづけて歌う→歌い終わりにまとめて判定・階段グラフ）／v0.9=保持0.5秒／v0.8=ステージ2を3段・合格の幅3段階／v0.7（2026-09-21夜）— 軌跡・保持ゲージ・入り方の分析・星3段階・連続日数（みかさん「可視化から発生の改善へ」）。v0.6=すごろく 単音→音階→メロディ
    ピッチ検出は「声の育成日記」の framePitchACF（自己相関法）を流用。端末内で完結。
    ========================================================== */
 const IOS = /iPhone|iPad|iPod/.test(navigator.userAgent);   // 9/21 12周目: 定義より前で使っていて読み込み時に落ち、全ボタンが死んでいた → 先頭へ
@@ -682,7 +685,7 @@ function cTick(hz) {
    グラフ＝階段: 各音の段（緑の帯）が左から並び、歌った線が左→右へ乗っていく。合わなかった音は「低い／高い／抜けた」で返して、お手本からやり直す
    ========================================================== */
 const ph = { t0: 0, samples: [], lastVoiced: 0, voicedMs: 0, oct: 0, result: null, cueSlot: -1, lastT: 0 };
-function phraseReset() { ph.warm = []; ph.pend = []; ph.t0 = 0; ph.samples.length = 0; ph.lastVoiced = 0; ph.voicedMs = 0; ph.oct = 0; ph.result = null; ph.cueSlot = -1; }
+function phraseReset() { ph.warm = []; ph.pend = []; ph.armT = 0; ph.t0 = 0; ph.samples.length = 0; ph.lastVoiced = 0; ph.voicedMs = 0; ph.oct = 0; ph.result = null; ph.cueSlot = -1; }
 function phraseSlotMs() { return seqGap(); }
 function foldCents(mf, target) { let d = (mf - target) * 100; if (Math.abs(d) > 600) { const f = d - Math.round(d / 1200) * 1200; if (Math.abs(f) <= 250) d = f; } return d; }
 function nearestCents(mf) { let best = 1e9, bi = 0; pr.targets.forEach((tg, i) => { const d = foldCents(mf, tg); if (Math.abs(d) < Math.abs(best)) { best = d; bi = i; } }); return [best, bi]; }
@@ -752,6 +755,18 @@ function evaluatePhrase() {
     if (hit) { const v = hit.seg.vals, mean = hit.seg.mean, wob = Math.sqrt(v.reduce((a, b) => a + (b - mean) * (b - mean), 0) / v.length) * 100; per.push({ deg: pr.degrees[i], m: tg, cents: hit.cents, ok: Math.abs(hit.cents) <= CONFIG.okCents, wobble: wob, seg: hit.seg }); }
     else per.push({ deg: pr.degrees[i], m: tg, cents: null, ok: false, wobble: 0, seg: null });
   });
+  /* 9/24 みかさん「これだけずれていて合格はダメ。テンポもある程度は必要」→ 「スタート」の拍を0として、各音の歌い出しがお手本の位置からずれすぎていないかを見る。
+     全体が同じだけ遅い分（反応の遅れ）は差し引いて、音ごとのずれだけを見る。つなげて歌った同じ音の2つ目以降は、歌い出しが無いので見ない */
+  if (ph.armT) {
+    const gap = phraseSlotMs(), offs = lenOffsets(lensOf()).offs, bt = ({ 80: 0.6, 50: 0.4, 25: 0.25 })[CONFIG.okCents] || 0.4;
+    const firsts = per.map((x, i) => (x.seg && (i === 0 || per[i - 1].seg !== x.seg)) ? i : -1).filter(i => i >= 0);
+    const dev = firsts.map(i => (per[i].seg.start - ph.armT) - offs[i] * gap);
+    if (dev.length) {
+      const shift = dev[0];   // 最初の音の歌い出しを基準にする（反応の遅れはここで差し引かれる。だんだん遅れていく歌い方は、後ろの音ほど「遅れた」になる）
+      firsts.forEach((i, k) => { const r = dev[k] - shift; if (Math.abs(r) > bt * gap) { per[i].ok = false; per[i].timing = r > 0 ? 'late' : 'early'; } });
+      if (shift > gap * 1.0 && per[firsts[0]]) { per[firsts[0]].ok = false; per[firsts[0]].timing = 'start'; }
+    }
+  }
   const pass = per.every(x => x.ok); ph.result = { per, pass };
   const w = document.getElementById('pc-word'), now = document.getElementById('pc-now');
   if (pass) {
@@ -770,7 +785,7 @@ function evaluatePhrase() {
     setTimeout(finishC, 900);
   } else {
     pr.tries++;
-    const miss = per.filter(x => !x.ok).map(x => degJP(x.deg) + (x.cents === null ? 'が抜けた' : x.cents < 0 ? 'が低い' : 'が高い'));
+    const miss = per.filter(x => !x.ok).map(x => degJP(x.deg) + (x.timing === 'start' ? 'の歌い出しが遅い' : x.timing === 'late' ? 'が遅れた' : x.timing === 'early' ? 'が早い' : x.cents === null ? 'が抜けた' : x.cents < 0 ? 'が低い' : 'が高い'));
     /* 9/23 みかさん「失敗したのか成功したのかいまいち分からなかった」→ 結果を1行で残す。お手本は自動では鳴らし直さない（「🔈 お手本」を押したときだけ） */
     pr.lastResult = { ok: false, text: '✕ 合わなかった: ' + miss.slice(0, 3).join('・') + (miss.length > 3 ? '…' : '') };
     w.className = 'word far'; w.textContent = pr.lastResult.text; now.textContent = '▶ 判定スタートで、もう一度';
@@ -791,9 +806,11 @@ function drawPhrase(nowT) {
     if (res && !res.ok && res.cents === null) { ctx.font = 'bold 22px -apple-system, sans-serif'; ctx.fillText('?', x + slotW / 2, yM(tg) + 26); }
   });
   if (!ph.t0) return;
-  const span = unitsD * phraseSlotMs() / 0.92, xOf = t => Math.min(w - 4, (t - ph.t0) / span * w);
+  const origin = ph.armT || ph.t0, span = ph.armT ? unitsD * phraseSlotMs() : unitsD * phraseSlotMs() / 0.92, xOf = t => Math.max(0, Math.min(w - 4, (t - origin) / span * w));
+  const expIdx = t => { if (!ph.armT) return -1; const u = (t - ph.armT) / phraseSlotMs(); let k = -1; offD.forEach((o, i) => { if (u >= o - 0.3) k = i; }); return k; };
+  const colAt = s => { const k = expIdx(s.t); return colorOf(k >= 0 ? foldCents(s.m, pr.targets[k]) : nearestCents(s.m)[0]); };
   ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; let prev = null;
-  for (const s of ph.samples) { const x = xOf(s.t), y = yM(s.m); if (prev && s.t - prev.t < 120) { ctx.strokeStyle = colorOf(nearestCents(s.m)[0]); ctx.beginPath(); ctx.moveTo(prev.x, prev.y); ctx.lineTo(x, y); ctx.stroke(); } prev = { x, y, t: s.t }; }
+  for (const s of ph.samples) { const x = xOf(s.t), y = yM(s.m); if (prev && s.t - prev.t < 120) { ctx.strokeStyle = colAt(s); ctx.beginPath(); ctx.moveTo(prev.x, prev.y); ctx.lineTo(x, y); ctx.stroke(); } prev = { x, y, t: s.t }; }
   if (prev && !ph.result) { ctx.fillStyle = colorOf(nearestCents(ph.samples[ph.samples.length - 1].m)[0]); ctx.beginPath(); ctx.arc(prev.x, prev.y, 12, 0, Math.PI * 2); ctx.fill(); }
   if (ph.result) ph.result.per.forEach((res, i) => { if (!res.seg) return; ctx.strokeStyle = res.ok ? '#2E8B57' : '#C0504D'; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(xOf(res.seg.start), yM(res.seg.mean)); ctx.lineTo(xOf(res.seg.end), yM(res.seg.mean)); ctx.stroke(); });
 }
@@ -865,23 +882,26 @@ document.getElementById('btn-replay').addEventListener('click', () => {
 });
 /* 🎤 歌う（9/22 夕）: 押した瞬間から判定。単音は最初の音だけ押せば、合った後は自動で次へ。フレーズは1回歌うごとに押す */
 function renderSing() { const b = document.getElementById('btn-sing'); if (!b) return; b.classList.toggle('armed', !!pr.armed); b.textContent = pr.armed ? '● 判定中' : '▶ 判定スタート'; }   // 9/22 みかさん「歌うじゃなく、判定スタート」
-document.getElementById('btn-sing').addEventListener('click', () => {
+document.getElementById('btn-sing').addEventListener('click', async () => {
   ensureCtx(); if (!pr.active || pr.counting) return;
   const arm = () => {
     pr.counting = false; pr.armed = true; pr.lastResult = null; pr.okSince = 0; pr.smooth = null; tr.samples.length = 0; tr.first = []; tr.voicedT = 0;
-    if (seqMode()) { const slot = ph.cueSlot; phraseReset(); ph.cueSlot = slot; document.querySelectorAll('#pc-notes span').forEach(sp => sp.classList.remove('miss')); }
+    if (seqMode()) { const slot = ph.cueSlot; phraseReset(); ph.cueSlot = slot; ph.armT = armAt || 0; document.querySelectorAll('#pc-notes span').forEach(sp => sp.classList.remove('miss')); }
     renderSing();
   };
+  let armAt = 0;
   if (!seqMode()) { arm(); toast('どうぞ。同じ高さで「あー」'); return; }
   /* 9/24 みかさん「ボタンを押してすぐ始まると歌い出しがずれる。1・2・3のカウントがあると入りやすい」→ お手本と同じ速さで3つ数えて、4つ目で歌い出す */
-  stopCue(); pr.counting = true; const gap = seqGap(), ctx = mic.ctx || ensureCtx(), b = document.getElementById('btn-sing'), out = makeOut(ctx);
+  stopCue(); pr.counting = true;
+  /* 9/24 みかさん「繰り返し押すと、お手本が聞こえなくなったり、録音が後ろにずれる」→ iPhoneでお手本のためにマイクを止めていたら、戻るのを待ってから数え始める */
+  if (IOS && (!mic.stream || micResumeTimer)) { clearTimeout(micResumeTimer); micResumeTimer = 0; b.textContent = '準備中…'; try { await micStart(); } catch (e) {} await new Promise(r => setTimeout(r, 400)); } const gap = seqGap(), ctx = mic.ctx || ensureCtx(), b = document.getElementById('btn-sing'), out = makeOut(ctx);
   /* 9/24 2回目「3・2・1 スタート」の形に。数える数は曲の拍子の1小節ぶん（4拍子＝4・3・2・1、3拍子＝3・2・1）。拍子は曲のボタンの data-meter（省略＝4） */
   const beats = (pr.song || pr.phrasePick) ? ((pr.song || pr.phrasePick).meter || 4) : 4;
   /* 9/24 3回目「4・3・2・1・スタートだと5拍目で歌い出すことになる」→ 3・2・1・スタート（4拍子）／2・1・スタート（3拍子）。「スタート」の拍で歌い出す */
   const pre = beats - 1;
   mic.muteUntil = performance.now() + pre * gap + 40;   // 数えている音をマイクで拾わない（スタートの拍からは拾う）
   for (let k = 0; k < pre; k++) { blip(ctx, ctx.currentTime + 0.05 + k * gap / 1000, k === 0 ? 1320 : 990, 0.07, 0.35, out); setTimeout(() => { b.textContent = String(pre - k); }, 50 + k * gap); }
-  setTimeout(() => { arm(); b.textContent = '● スタート！'; }, 50 + pre * gap - 60);
+  const t0c = performance.now(); setTimeout(() => { armAt = t0c + 50 + pre * gap; arm(); b.textContent = '● スタート！'; }, 50 + pre * gap - 60);
 });
 /* 9/21 みかさん「声を出すのと聞くのと同時に両立させたい」→ iPhoneで両立できるかは実機でしか分からないので、切り替えて試せるようにする */
 function renderSimul() { const b = document.getElementById('btn-simul'); if (!b) return; b.hidden = true; return; b.textContent = store.simul ? 'お手本の間のマイク: そのまま（既定）' : 'お手本の間のマイク: 止める（許可の表示が出ます）'; }
@@ -893,10 +913,8 @@ document.getElementById('btn-next-stage').addEventListener('click', () => { if (
 document.getElementById('btn-clear-stars').addEventListener('click', () => { store.stars = {}; save(); renderStages(); toast('星をリセットしました'); });
 document.getElementById('btn-reset').addEventListener('click', () => { stopStage(); restorePaText(); store.startMidi = null; save(); document.getElementById('pa-next').hidden = true; document.getElementById('pa-msg').textContent = ' '; const b = document.getElementById('btn-voice'); b.className = 'btn'; b.textContent = '🎤 「あー」を3秒'; b.parentElement.hidden = false; document.getElementById('pa-redo').hidden = true; show('pa'); });
 document.getElementById('seg-tol').addEventListener('click', e => { if (!e.target.dataset.v) return; store.tol = +e.target.dataset.v; CONFIG.okCents = store.tol; CONFIG.nearCents = Math.max(CONFIG.okCents + 30, 60); save(); renderTol(); [...e.currentTarget.children].forEach(b => b.classList.toggle('on', b === e.target)); });
-function renderTol() { ['seg-tol', 'seg-tol2'].forEach(id => { const el = document.getElementById(id); if (el) [...el.children].forEach(b => b.classList.toggle('on', +b.dataset.v === (store.tol || 50))); }); }
+function renderTol() { ['seg-tol'].forEach(id => { const el = document.getElementById(id); if (el) [...el.children].forEach(b => b.classList.toggle('on', +b.dataset.v === (store.tol || 50))); }); }
 renderTol();
-/* 9/24 みかさん「録音している画面で判定基準を変えられるようにしたい」 */
-document.getElementById('seg-tol2').addEventListener('click', e => { if (!e.target.dataset.v) return; store.tol = +e.target.dataset.v; CONFIG.okCents = store.tol; CONFIG.nearCents = Math.max(CONFIG.okCents + 30, 60); save(); renderTol(); toast('合格の幅: ' + e.target.textContent); });
 
 /* ==========================================================
    ピッチ計
