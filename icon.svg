@@ -1,1 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#1F3A3D"/><rect x="96" y="300" width="320" height="10" rx="5" fill="#8FB3B5"/><rect x="236" y="268" width="40" height="74" rx="8" fill="#DFF3EE"/><rect x="250" y="120" width="12" height="220" rx="6" fill="#F6F4EE"/><circle cx="256" cy="120" r="26" fill="#F6F4EE"/><text x="256" y="430" text-anchor="middle" font-family="Hiragino Sans, sans-serif" font-size="92" font-weight="700" fill="#F6F4EE">ド</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#3D3535"/>
+<g fill="#49BACE"><rect x="72" y="332" width="112" height="36" opacity=".28"/><rect x="72" y="346" width="112" height="8"/>
+<rect x="200" y="238" width="112" height="36" opacity=".28"/><rect x="200" y="252" width="112" height="8"/>
+<rect x="328" y="144" width="112" height="36" opacity=".28"/><rect x="328" y="158" width="112" height="8"/></g>
+<path d="M76 372 C120 374 150 370 176 368 C198 366 190 280 214 278 C250 276 280 280 302 276 C326 272 318 186 342 184 C378 182 400 186 420 184" fill="none" stroke="#E8815B" stroke-width="16" stroke-linecap="round"/>
+<circle cx="424" cy="184" r="20" fill="#4CBC8A" stroke="#3D3535" stroke-width="6"/></svg>

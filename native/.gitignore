@@ -1,0 +1,4 @@
+node_modules/
+www/
+ios/App/build-sim/
+.DS_Store
