@@ -10,3 +10,7 @@
 ## 開発
 1ファイルPWA（`index.html`）。`python3 -m http.server` でローカル確認。
 `window.__ontei` にテスト用の関数を出している（`framePitchACF` / `hzToMidiF`）。
+
+## 曲を足すとき
+
+[曲の足し方.md](曲の足し方.md) の手順どおりに進める（著作権の確認・書き方・テンポ・出す前の確かめ）。
