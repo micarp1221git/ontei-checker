@@ -84,6 +84,8 @@ h2{font-size:22px;margin:4px 0 6px;line-height:1.4}
 .meter .lab.l{left:0}.meter .lab.r{right:0}.meter .lab.c{left:50%;transform:translateX(-50%)}
 .toast{position:fixed;left:50%;bottom:110px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 18px;border-radius:12px;font-size:16px;font-weight:700;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90%;text-align:center}
 .toast.show{opacity:1}
+/* 9/24 みかさん「判定スタートがスクロールしないと見えなかった（かえるのうた フレーズ4）」→ ボタン列を画面の下（タブの上）に貼りつける */
+.actbar{position:sticky;bottom:calc(72px + env(safe-area-inset-bottom));z-index:5;background:#fff;padding:8px 0;box-shadow:0 -6px 12px -8px rgba(0,0,0,.15)}
 nav{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);display:flex;padding-bottom:env(safe-area-inset-bottom)}
 nav button{flex:1;border:0;background:transparent;padding:10px 4px 8px;font-size:12px;color:var(--sub);display:flex;flex-direction:column;align-items:center;gap:2px}
 nav button .ic{font-size:20px;line-height:1}
@@ -146,11 +148,11 @@ details{margin-top:8px}summary{color:var(--sub);font-size:14px;cursor:pointer}
     <p class="lead" id="pb-lead">あなたの声に合わせた高さで鳴ります。まずは聞くだけ。</p>
     <div class="seg" id="pb-levels" hidden style="margin:0 0 10px"></div>
     <div class="notes wrap" id="pb-notes"></div>
-    <div class="row"><button class="btn sec" id="btn-listen">🔈 聞く</button><button class="btn" id="btn-b-next">いっしょにやる</button></div>
+    <div class="row"><button class="btn sec" id="btn-listen">🔈 聞く</button><button class="btn" id="btn-b-next">挑戦する</button></div>
     <div class="small" style="margin-top:12px">合格の幅</div>
-    <div class="seg" id="seg-tol" style="margin-top:4px"><button data-v="50">かんたん</button><button data-v="30" class="on">ふつう</button><button data-v="10">きびしい</button></div>
-    <p class="hint" style="margin-top:4px">かんたん＝半音の5割以内で合格。ふつう＝3割。きびしい＝1割。</p>
-    <p class="hint" id="pb-how">「聞く」は聞くだけ（押さなくても進めます）。「いっしょにやる」で練習の画面へ。そこでは「お手本」で聞いて、「判定スタート」から歌います。</p>
+    <div class="seg" id="seg-tol" style="margin-top:4px"><button data-v="80">かんたん</button><button data-v="50" class="on">ふつう</button><button data-v="25">きびしい</button></div>
+    <p class="hint" style="margin-top:4px">かんたん＝半音の8割以内で合格。ふつう＝5割。きびしい＝4分の1。</p>
+    <p class="hint" id="pb-how">「聞く」は聞くだけ（押さなくても進めます）。「挑戦する」で練習の画面へ。そこでは「お手本」で聞いて、「判定スタート」から歌います。</p>
     <p class="hint">高すぎる・低すぎると感じたら、半音ずつ動かせます。</p>
     <div class="row" style="margin-top:8px"><button class="btn ghost" id="btn-lower">♭ 少し低く</button><button class="btn ghost" id="btn-higher">♯ 少し高く</button></div>
     <!-- 9/23 みかさん「お手本が女性にはオクターブ低く聞こえる」「最初の『あー』の画面が再読み込みで出てこない」→ オクターブで動かすボタンと、高さを決め直す入口をここに -->
@@ -193,7 +195,7 @@ details{margin-top:8px}summary{color:var(--sub);font-size:14px;cursor:pointer}
     <div class="word" id="pc-word">&nbsp;</div>
     <div class="sub" id="pc-now">&nbsp;</div>
     <!-- 9/22 夕 みかさん「判定スタートがいつか分かりにくい。出遅れるとレの枠でドを歌って弾かれる」→ 🎤 歌う ボタン。押すまで測らない。お手本と同じ大きさで横並び・グラフと一緒にスクロール無しで見える -->
-    <div class="row" style="margin:6px 0 4px"><button class="btn sec" id="btn-replay">🔈 お手本</button><button class="btn" id="btn-sing">▶ 判定スタート</button></div>
+    <div class="row actbar" style="margin:6px 0 4px"><button class="btn sec" id="btn-replay">🔈 お手本</button><button class="btn" id="btn-sing">▶ 判定スタート</button></div>
     <div class="center small" id="pc-sub">お手本を聞いたら「判定スタート」を押して、同じ高さで声をのばします</div>
     <div class="lvl"><i></i></div><div class="lvl-txt"></div>
     <div class="center" style="margin-top:6px"><button class="btn ghost" id="btn-stop" style="flex:0 0 auto;padding:6px 14px;font-size:13px">やめる</button><button class="btn ghost" id="btn-simul" style="flex:0 0 auto;padding:6px 14px;font-size:13px"></button></div>
@@ -263,7 +265,7 @@ details{margin-top:8px}summary{color:var(--sub);font-size:14px;cursor:pointer}
 
 <script>
 /* ==========================================================
-   音程チェッカー v1.8（2026-09-24 昼）— 曲を選んだら「1曲通して歌う」と「1フレーズだけ練習（フレーズを選ぶ）」を分けて出す／休符で歌い終わりと見なさない／休符をはさむ同じ音は1本にのばしても数えない（1音でクリアになる不具合）／最後の音の休符でお手本がのびすぎていたのを直す（みかさん）／v1.7（2026-09-24 昼）— 3曲を楽譜どおりに作り直し（2小節で1フレーズ・小節線・音の長さを丸の幅で・メリーさんの二分と全音符）（みかさん「楽譜を基準に」）／v1.6（2026-09-24）— 休符（かえるのうた3フレーズ目＝ド・休・ド・休…をお手本も表示も）／1フレーズだけの練習でも音の長さと休符を持っていく／エッジボイスなどの一瞬のガリッを捨てる（3点続いたときだけ採る・出だしのオクターブは5点の真ん中）（みかさん）／v1.5（2026-09-23 昼）— 同じ高さが続く音（ドドドド）を切れ目で4つに聞こえるように／プリセットに音の長さ（かえるのうた後半の八分音符・各フレーズ終わりの二分音符）／判定も息継ぎで音を数え、伸ばして歌った同音も落とさない（みかさん）／v1.4（2026-09-23）— 「聞く」画面に⬇⬆1オクターブと「高さを決め直す」／「聞く」と「いっしょにやる」を分ける（聞かなくても進める・練習画面でお手本を勝手に鳴らさない）／結果を「◯／✕ 合わなかった: …」で残す／プリセット3曲を1曲通しで（フレーズごとに合ったら次へ）／v1.3（2026-09-22夜）— ボタン名「判定スタート」・フレーズのお手本を途切れなくつなげて鳴らす（1つの音源で高さだけ切り替える）／v1.2（2026-09-22夕）— 「🎤 歌う」ボタン: 押すまで測らない（出遅れて次の音の枠で弾かれる問題）。お手本と横並び・やめるは下の小ボタンへ／v1.1（2026-09-22夕）— フレーズのお手本を1音0.65秒に（単音1.3秒の半分・16分のイメージ）、人の判定も短く（最短0.12秒・歌い終わり0.7秒）／v1.0（2026-09-22昼）— 2音以上はフレーズモード（お手本1音1.3秒→つづけて歌う→歌い終わりにまとめて判定・階段グラフ）／v0.9=保持0.5秒／v0.8=ステージ2を3段・合格の幅3段階／v0.7（2026-09-21夜）— 軌跡・保持ゲージ・入り方の分析・星3段階・連続日数（みかさん「可視化から発生の改善へ」）。v0.6=すごろく 単音→音階→メロディ
+   音程チェッカー v1.9（2026-09-24 午後）— お手本を途中で止める／「いっしょにやる」→「挑戦する」／判定スタートを画面の下に貼りつける／合格の幅を広げる（80・50・25）／休符のあるフレーズは音が出そろうまで3秒待つ（みかさん）／v1.8（2026-09-24 昼）— 曲を選んだら「1曲通して歌う」と「1フレーズだけ練習（フレーズを選ぶ）」を分けて出す／休符で歌い終わりと見なさない／休符をはさむ同じ音は1本にのばしても数えない（1音でクリアになる不具合）／最後の音の休符でお手本がのびすぎていたのを直す（みかさん）／v1.7（2026-09-24 昼）— 3曲を楽譜どおりに作り直し（2小節で1フレーズ・小節線・音の長さを丸の幅で・メリーさんの二分と全音符）（みかさん「楽譜を基準に」）／v1.6（2026-09-24）— 休符（かえるのうた3フレーズ目＝ド・休・ド・休…をお手本も表示も）／1フレーズだけの練習でも音の長さと休符を持っていく／エッジボイスなどの一瞬のガリッを捨てる（3点続いたときだけ採る・出だしのオクターブは5点の真ん中）（みかさん）／v1.5（2026-09-23 昼）— 同じ高さが続く音（ドドドド）を切れ目で4つに聞こえるように／プリセットに音の長さ（かえるのうた後半の八分音符・各フレーズ終わりの二分音符）／判定も息継ぎで音を数え、伸ばして歌った同音も落とさない（みかさん）／v1.4（2026-09-23）— 「聞く」画面に⬇⬆1オクターブと「高さを決め直す」／「聞く」と「いっしょにやる」を分ける（聞かなくても進める・練習画面でお手本を勝手に鳴らさない）／結果を「◯／✕ 合わなかった: …」で残す／プリセット3曲を1曲通しで（フレーズごとに合ったら次へ）／v1.3（2026-09-22夜）— ボタン名「判定スタート」・フレーズのお手本を途切れなくつなげて鳴らす（1つの音源で高さだけ切り替える）／v1.2（2026-09-22夕）— 「🎤 歌う」ボタン: 押すまで測らない（出遅れて次の音の枠で弾かれる問題）。お手本と横並び・やめるは下の小ボタンへ／v1.1（2026-09-22夕）— フレーズのお手本を1音0.65秒に（単音1.3秒の半分・16分のイメージ）、人の判定も短く（最短0.12秒・歌い終わり0.7秒）／v1.0（2026-09-22昼）— 2音以上はフレーズモード（お手本1音1.3秒→つづけて歌う→歌い終わりにまとめて判定・階段グラフ）／v0.9=保持0.5秒／v0.8=ステージ2を3段・合格の幅3段階／v0.7（2026-09-21夜）— 軌跡・保持ゲージ・入り方の分析・星3段階・連続日数（みかさん「可視化から発生の改善へ」）。v0.6=すごろく 単音→音階→メロディ
    ピッチ検出は「声の育成日記」の framePitchACF（自己相関法）を流用。端末内で完結。
    ========================================================== */
 const IOS = /iPhone|iPad|iPod/.test(navigator.userAgent);   // 9/21 12周目: 定義より前で使っていて読み込み時に落ち、全ボタンが死んでいた → 先頭へ
@@ -288,7 +290,9 @@ try { Object.assign(store, JSON.parse(localStorage.getItem(KEY) || '{}')); } cat
 if (!Array.isArray(store.days)) store.days = [];
 if (store.stars[2] && store.stars['2-2'] === undefined) { const v = +store.stars[2] || 1; store.stars['2-0'] = store.stars['2-1'] = store.stars['2-2'] = v; }   // v0.7の音階クリアは3段ぶん認める
 function save() { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) {} }
-CONFIG.okCents = store.tol || 30;
+/* 9/24 みかさん「ふつうでもまあまあ難しい・かんたんでも結構難しい」→ 幅を広げた（旧 50/30/10 → 80/50/25）。前に選んでいた値は読み替える */
+if (store.tol === 30) store.tol = 50; else if (store.tol === 10) store.tol = 25; else if (store.tol === 50 && !store.tol2) store.tol = 80; store.tol2 = 1;
+CONFIG.okCents = store.tol || 50; CONFIG.nearCents = Math.max(CONFIG.okCents + 30, 60);
 /* 9/21 表示は「移動ド」: ♭♯で高さをずらしても、子どもに見せる名前は常にドレミファソ（絶対音名は小さく添える）。
    v0.6までは noteJP(絶対) で出していたので、ドをシに下げると「シ ド♯ レ♯ ミ ファ♯」と表示されていた */
 const DEG_JP = { 0: 'ド', 2: 'レ', 4: 'ミ', 5: 'ファ', 7: 'ソ', 9: 'ラ', 11: 'シ', 12: 'ド↑' };
@@ -602,7 +606,7 @@ function cueTarget(chime) {
   if (seqMode()) {   // お手本が鳴っている間、音の丸を順に光らせる（聞く画面と同じ見せ方）
     phraseReset(); const gap = seqGap(), lensC = lensOf(), { offs: offC, total: unitsC } = lenOffsets(lensC), total = playSeq(pr.targets, gap, lensC, pr.rests), d = total - unitsC * gap;
     clearTimeout(pr.cueRestore);
-    pr.targets.forEach((_, i) => setTimeout(() => { if (!pr.active) return; ph.cueSlot = i; document.querySelectorAll('#pc-notes span').forEach((sp, j) => sp.classList.toggle('play', j === i)); }, d + offC[i] * gap));
+    pr.cueTimers = pr.targets.map((_, i) => setTimeout(() => { if (!pr.active) return; ph.cueSlot = i; document.querySelectorAll('#pc-notes span').forEach((sp, j) => sp.classList.toggle('play', j === i)); }, d + offC[i] * gap));
     pr.cueRestore = setTimeout(() => { ph.cueSlot = -1; document.querySelectorAll('#pc-notes span').forEach(sp => sp.classList.remove('play')); }, total + 50);
     return;
   }
@@ -611,7 +615,7 @@ function cueTarget(chime) {
 function renderC() {
   const m = pr.targets[pr.idx], d = pr.degrees[pr.idx], name = degJP(d);
   const big = document.getElementById('pc-target'); big.textContent = name; const abs = document.createElement('span'); abs.className = 'abs'; abs.textContent = noteEN(m); big.appendChild(abs);
-  document.getElementById('pc-title').textContent = pr.targets.length === 1 ? `「${name}」と同じ高さで「あー」` : `「${pr.degrees.map(degJP).join('')}」と、つづけて歌います`;
+  document.getElementById('pc-title').textContent = pr.targets.length === 1 ? `「${name}」と同じ高さで「あー」` : 'つづけて歌います';
   document.getElementById('pc-prog').style.width = (seqMode() ? 0 : pr.idx / pr.targets.length * 100) + '%';
   const n = document.getElementById('pc-notes'); n.innerHTML = ''; pr.degrees.forEach((dd, i) => { const s = document.createElement('span'); s.textContent = degJP(dd); if (pr.rests && pr.rests[i] > 0) s.dataset.rest = '1'; if (pr.bars && pr.bars[i]) s.dataset.bar = '1'; /* 9/24 みかさん「楽譜を基準に」→ 音の長さを丸の幅で見せる（八分＝小さい丸・二分＝横長）。音が多いフレーズは全体を小さく */ { const L = (pr.lens && pr.lens[i]) ? pr.lens[i] - ((pr.rests && pr.rests[i]) || 0) : 1; const base = 34; s.style.height = base + 'px'; s.style.width = Math.round(base * (L >= 1 ? Math.min(L, 1.5) : 0.76)) + 'px'; s.style.fontSize = degJP(dd).length > 1 ? '11px' : '15px'; s.style.borderRadius = base + 'px'; } s.className = (seqMode() ? '' : i < pr.idx ? 'done' : i === pr.idx ? 'cur' : '') + (degJP(dd).length > 1 ? ' two' : ''); n.appendChild(s); if (pr.bars && pr.bars[i] && pr.degrees.length > 7) { const br = document.createElement('div'); br.style.flexBasis = '100%'; br.style.height = '0'; n.appendChild(br); } });
   tr.noteT0 = performance.now(); tr.first = []; tr.voicedT = 0;
@@ -721,7 +725,9 @@ function phraseEndLimit() {
   const gap = phraseSlotMs(), rests = pr.rests || [], maxRest = rests.length ? Math.max(...rests) * gap : 0;
   const expect = lenOffsets(lensOf()).total * gap;
   const early = ph.t0 && (ph.lastVoiced - ph.t0) < expect * 0.7;
-  return CONFIG.phraseEndMs + maxRest + (early && maxRest ? maxRest : 0);
+  const base = CONFIG.phraseEndMs + maxRest + (early && maxRest ? maxRest : 0);
+  /* 9/24 みかさん「フレーズ3だけやると4つ目ができない」→ 目標の数だけ音が出そろうまでは、3秒までは待つ */
+  return maxRest && phraseSegments().length < pr.targets.length ? Math.max(base, 3000) : base;
 }
 function phraseSegments() {
   const segs = []; let cur = null;
@@ -836,7 +842,20 @@ function finishC() {
   const coach = coachText(pr.results); const ce = document.getElementById('pd-coach'); ce.hidden = !coach; ce.textContent = coach;
   show('pd');
 }
-document.getElementById('btn-replay').addEventListener('click', () => { ensureCtx(); cueTarget(); });
+/* 9/24 みかさん「お手本が全部鳴り終わるまで待たないといけないのが嫌なので、止めるボタンが欲しい」→ 鳴っている間は同じボタンが「⏹ 止める」になる */
+function stopCue() {
+  stopTone(); try { toneAudio.pause(); } catch (e) {}
+  mic.muteUntil = 0; clearTimeout(pr.cueRestore); (pr.cueTimers || []).forEach(clearTimeout); pr.cueTimers = [];
+  ph.cueSlot = -1; document.querySelectorAll('#pc-notes span').forEach(sp => sp.classList.remove('play'));
+  const b = document.getElementById('btn-replay'); b.textContent = '🔈 お手本'; clearTimeout(pr.replayLabel);
+}
+document.getElementById('btn-replay').addEventListener('click', () => {
+  ensureCtx();
+  if (performance.now() < mic.muteUntil) { stopCue(); return; }
+  cueTarget();
+  const b = document.getElementById('btn-replay'); b.textContent = '⏹ 止める'; clearTimeout(pr.replayLabel);
+  pr.replayLabel = setTimeout(() => { b.textContent = '🔈 お手本'; }, Math.max(300, mic.muteUntil - performance.now()));
+});
 /* 🎤 歌う（9/22 夕）: 押した瞬間から判定。単音は最初の音だけ押せば、合った後は自動で次へ。フレーズは1回歌うごとに押す */
 function renderSing() { const b = document.getElementById('btn-sing'); if (!b) return; b.classList.toggle('armed', !!pr.armed); b.textContent = pr.armed ? '● 判定中' : '▶ 判定スタート'; }   // 9/22 みかさん「歌うじゃなく、判定スタート」
 document.getElementById('btn-sing').addEventListener('click', () => {
@@ -854,8 +873,8 @@ document.getElementById('btn-again').addEventListener('click', () => { if (pr.so
 document.getElementById('btn-next-stage').addEventListener('click', () => { const nx = nextStep(); if (nx) goStage(nx.stage, nx.level); });
 document.getElementById('btn-clear-stars').addEventListener('click', () => { store.stars = {}; save(); renderStages(); toast('星をリセットしました'); });
 document.getElementById('btn-reset').addEventListener('click', () => { stopStage(); restorePaText(); store.startMidi = null; save(); document.getElementById('pa-next').hidden = true; document.getElementById('pa-msg').textContent = ' '; const b = document.getElementById('btn-voice'); b.className = 'btn'; b.textContent = '🎤 「あー」を3秒'; b.parentElement.hidden = false; document.getElementById('pa-redo').hidden = true; show('pa'); });
-document.getElementById('seg-tol').addEventListener('click', e => { if (!e.target.dataset.v) return; store.tol = +e.target.dataset.v; CONFIG.okCents = store.tol; save(); [...e.currentTarget.children].forEach(b => b.classList.toggle('on', b === e.target)); });
-[...document.getElementById('seg-tol').children].forEach(b => b.classList.toggle('on', +b.dataset.v === (store.tol || 30)));
+document.getElementById('seg-tol').addEventListener('click', e => { if (!e.target.dataset.v) return; store.tol = +e.target.dataset.v; CONFIG.okCents = store.tol; CONFIG.nearCents = Math.max(CONFIG.okCents + 30, 60); save(); [...e.currentTarget.children].forEach(b => b.classList.toggle('on', b === e.target)); });
+[...document.getElementById('seg-tol').children].forEach(b => b.classList.toggle('on', +b.dataset.v === (store.tol || 50)));
 
 /* ==========================================================
    ピッチ計
