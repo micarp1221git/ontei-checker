@@ -37,9 +37,13 @@ h2{font-size:22px;margin:4px 0 6px;line-height:1.4}
 .big{font-size:60px;font-weight:700;line-height:1.1;text-align:center;margin:6px 0 0}
 .big small{font-size:20px;font-weight:500;color:var(--sub);margin-left:6px}
 .center{text-align:center}
-.notes{display:flex;gap:8px;justify-content:center;margin:8px 0 4px}
+.notes{display:flex;gap:6px;justify-content:center;margin:8px 0 4px}
+.notes{flex-wrap:wrap;row-gap:8px}
+.notes span{flex-shrink:0;white-space:nowrap}
 .notes span{width:44px;height:44px;border-radius:50%;border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--sub);background:#fff;font-size:17px}
 .notes span.two{font-size:12px;letter-spacing:-.04em}
+.notes span[data-bar]{margin-right:22px;position:relative}.notes span[data-bar]::before{content:'';position:absolute;right:-13px;top:4px;bottom:4px;width:2px;background:var(--sub);opacity:.5}
+.notes span[data-rest][data-bar]::before{right:-26px}.notes span[data-rest][data-bar]{margin-right:34px}
 .notes span[data-rest]{margin-right:22px;position:relative}.notes span[data-rest]::after{content:'';position:absolute;right:-17px;top:50%;width:12px;height:4px;margin-top:-2px;border-radius:2px;background:var(--line)}
 .notes span.cur{border-color:var(--accent);color:var(--accent);box-shadow:0 0 0 3px rgba(31,111,115,.15);transform:scale(1.15)}
 .notes span.play{background:var(--ink);border-color:var(--ink);color:#fff;transform:scale(1.15)}
@@ -156,7 +160,7 @@ details{margin-top:8px}summary{color:var(--sub);font-size:14px;cursor:pointer}
   <div class="card" id="pm" hidden>
     <div class="step">ステージ3 メロディ</div>
     <h2>メロディを選ぶ・作る</h2>
-    <div class="presets"><button data-m="0,2,4,5,4,2,0:2/4,5,7,9,7,5,4:2/0:1+1,0:1+1,0:1+1,0:1+1/0:.5,0:.5,2:.5,2:.5,4:.5,4:.5,5:.5,5:.5,4,2,0:2">かえるのうた</button><button data-m="0,0,7,7,9,9,7:2/5,5,4,4,2,2,0:2/7,7,5,5,4,4,2:2/7,7,5,5,4,4,2:2/0,0,7,7,9,9,7:2/5,5,4,4,2,2,0:2">きらきら星</button><button data-m="4,2,0,2,4,4,4/2,2,2/4,7,7/4,2,0,2,4,4,4,4/2,2,4,2,0">メリーさんのひつじ</button></div>
+    <div class="presets"><button data-m="0,2,4,5,|,4,2,0:2/4,5,7,9,|,7,5,4:2/0:1+1,0:1+1,|,0:1+1,0:1+1/0:.5,0:.5,2:.5,2:.5,4:.5,4:.5,5:.5,5:.5,|,4,2,0:2">かえるのうた</button><button data-m="0,0,7,7,|,9,9,7:2/5,5,4,4,|,2,2,0:2/7,7,5,5,|,4,4,2:2/7,7,5,5,|,4,4,2:2/0,0,7,7,|,9,9,7:2/5,5,4,4,|,2,2,0:2">きらきら星</button><button data-m="4,2,0,2,|,4,4,4:2/2,2,2:2,|,4,7,7:2/4,2,0,2,|,4,4,4,4/2,2,4,2,|,0:4">メリーさんのひつじ</button></div>
     <!-- 9/23 みかさん「かえるの歌も1フレーズしかなくて、1曲通してできない」→ プリセットは曲まるごと（フレーズを / で区切る）。押すと1フレーズ目が下の欄に入り、「1曲通し」ボタンが出る -->
     <div class="row" id="song-row" hidden style="margin-top:8px"><button class="btn" id="btn-song-go">🎵 1曲通し</button></div>
     <p class="hint" style="margin-top:12px">自分で作る（ボタンを押した順に並びます・八分音符・16音まで）</p>
@@ -252,7 +256,7 @@ details{margin-top:8px}summary{color:var(--sub);font-size:14px;cursor:pointer}
 
 <script>
 /* ==========================================================
-   音程チェッカー v1.6（2026-09-24）— 休符（かえるのうた3フレーズ目＝ド・休・ド・休…をお手本も表示も）／1フレーズだけの練習でも音の長さと休符を持っていく／エッジボイスなどの一瞬のガリッを捨てる（3点続いたときだけ採る・出だしのオクターブは5点の真ん中）（みかさん）／v1.5（2026-09-23 昼）— 同じ高さが続く音（ドドドド）を切れ目で4つに聞こえるように／プリセットに音の長さ（かえるのうた後半の八分音符・各フレーズ終わりの二分音符）／判定も息継ぎで音を数え、伸ばして歌った同音も落とさない（みかさん）／v1.4（2026-09-23）— 「聞く」画面に⬇⬆1オクターブと「高さを決め直す」／「聞く」と「いっしょにやる」を分ける（聞かなくても進める・練習画面でお手本を勝手に鳴らさない）／結果を「◯／✕ 合わなかった: …」で残す／プリセット3曲を1曲通しで（フレーズごとに合ったら次へ）／v1.3（2026-09-22夜）— ボタン名「判定スタート」・フレーズのお手本を途切れなくつなげて鳴らす（1つの音源で高さだけ切り替える）／v1.2（2026-09-22夕）— 「🎤 歌う」ボタン: 押すまで測らない（出遅れて次の音の枠で弾かれる問題）。お手本と横並び・やめるは下の小ボタンへ／v1.1（2026-09-22夕）— フレーズのお手本を1音0.65秒に（単音1.3秒の半分・16分のイメージ）、人の判定も短く（最短0.12秒・歌い終わり0.7秒）／v1.0（2026-09-22昼）— 2音以上はフレーズモード（お手本1音1.3秒→つづけて歌う→歌い終わりにまとめて判定・階段グラフ）／v0.9=保持0.5秒／v0.8=ステージ2を3段・合格の幅3段階／v0.7（2026-09-21夜）— 軌跡・保持ゲージ・入り方の分析・星3段階・連続日数（みかさん「可視化から発生の改善へ」）。v0.6=すごろく 単音→音階→メロディ
+   音程チェッカー v1.7（2026-09-24 昼）— 3曲を楽譜どおりに作り直し（2小節で1フレーズ・小節線・音の長さを丸の幅で・メリーさんの二分と全音符）（みかさん「楽譜を基準に」）／v1.6（2026-09-24）— 休符（かえるのうた3フレーズ目＝ド・休・ド・休…をお手本も表示も）／1フレーズだけの練習でも音の長さと休符を持っていく／エッジボイスなどの一瞬のガリッを捨てる（3点続いたときだけ採る・出だしのオクターブは5点の真ん中）（みかさん）／v1.5（2026-09-23 昼）— 同じ高さが続く音（ドドドド）を切れ目で4つに聞こえるように／プリセットに音の長さ（かえるのうた後半の八分音符・各フレーズ終わりの二分音符）／判定も息継ぎで音を数え、伸ばして歌った同音も落とさない（みかさん）／v1.4（2026-09-23）— 「聞く」画面に⬇⬆1オクターブと「高さを決め直す」／「聞く」と「いっしょにやる」を分ける（聞かなくても進める・練習画面でお手本を勝手に鳴らさない）／結果を「◯／✕ 合わなかった: …」で残す／プリセット3曲を1曲通しで（フレーズごとに合ったら次へ）／v1.3（2026-09-22夜）— ボタン名「判定スタート」・フレーズのお手本を途切れなくつなげて鳴らす（1つの音源で高さだけ切り替える）／v1.2（2026-09-22夕）— 「🎤 歌う」ボタン: 押すまで測らない（出遅れて次の音の枠で弾かれる問題）。お手本と横並び・やめるは下の小ボタンへ／v1.1（2026-09-22夕）— フレーズのお手本を1音0.65秒に（単音1.3秒の半分・16分のイメージ）、人の判定も短く（最短0.12秒・歌い終わり0.7秒）／v1.0（2026-09-22昼）— 2音以上はフレーズモード（お手本1音1.3秒→つづけて歌う→歌い終わりにまとめて判定・階段グラフ）／v0.9=保持0.5秒／v0.8=ステージ2を3段・合格の幅3段階／v0.7（2026-09-21夜）— 軌跡・保持ゲージ・入り方の分析・星3段階・連続日数（みかさん「可視化から発生の改善へ」）。v0.6=すごろく 単音→音階→メロディ
    ピッチ検出は「声の育成日記」の framePitchACF（自己相関法）を流用。端末内で完結。
    ========================================================== */
 const IOS = /iPhone|iPad|iPod/.test(navigator.userAgent);   // 9/21 12周目: 定義より前で使っていて読み込み時に落ち、全ボタンが死んでいた → 先頭へ
@@ -528,7 +532,7 @@ function renderPad() {
 function renderSeq() { const box = document.getElementById('seqbox'); box.textContent = store.melody.length ? store.melody.map(d => PAD.find(p => p[0] === d)[1]).join(' ') : '　'; document.getElementById('btn-seq-go').disabled = store.melody.length < 2; }
 document.querySelectorAll('#pm .presets button').forEach(b => b.addEventListener('click', () => {
   /* 9/23 みかさん「4/4の八分音符が反映されていない」→ 音ごとの長さ。書き方は d:h（h=長さの倍率・.5=八分・2=二分・省略=四分） */
-  const phrases = b.dataset.m.split('/').map(x => { const toks = x.split(',').map(t => t.split(':')); const arr = toks.map(t => Number(t[0])); const pl = t => (t[1] || '1').split('+').map(Number); arr.lens = toks.map(t => pl(t)[0] + (pl(t)[1] || 0)); arr.rests = toks.map(t => pl(t)[1] || 0); return arr; });   /* 9/24 休符: 「0:1+1」＝1拍鳴らして1拍休む（lens は休みこみの長さ） */
+  const phrases = b.dataset.m.split('/').map(x => { const raw = x.split(','); const bars = []; const toks = []; raw.forEach(t => { if (t === '|') { if (toks.length) bars[toks.length - 1] = true; } else toks.push(t.split(':')); }); const arr = toks.map(t => Number(t[0])); arr.bars = toks.map((_, i) => !!bars[i]); const pl = t => (t[1] || '1').split('+').map(Number); arr.lens = toks.map(t => pl(t)[0] + (pl(t)[1] || 0)); arr.rests = toks.map(t => pl(t)[1] || 0); return arr; });   /* 9/24 休符: 「0:1+1」＝1拍鳴らして1拍休む（lens は休みこみの長さ） */
   store.melody = phrases[0].slice(); save(); renderSeq();
   pr.songPick = { name: b.textContent.trim(), phrases };
   const row = document.getElementById('song-row'); row.hidden = false; document.getElementById('btn-song-go').textContent = `🎵 「${pr.songPick.name}」を1曲通し（${phrases.length}フレーズ）`;
@@ -571,7 +575,7 @@ document.getElementById('btn-oct-up').addEventListener('click', () => shiftKey(1
 document.getElementById('btn-rekey').addEventListener('click', () => document.getElementById('btn-reset').click());
 document.getElementById('btn-b-next').addEventListener('click', () => startC());
 
-function buildTargets(degrees) { pr.degrees = degrees.slice(); pr.lens = (degrees.lens || degrees.map(() => 1)).slice(); pr.rests = (degrees.rests || degrees.map(() => 0)).slice(); pr.targets = degrees.map(d => store.startMidi + d); pr.idx = 0; pr.results = []; }
+function buildTargets(degrees) { pr.degrees = degrees.slice(); pr.lens = (degrees.lens || degrees.map(() => 1)).slice(); pr.rests = (degrees.rests || degrees.map(() => 0)).slice(); pr.bars = (degrees.bars || degrees.map(() => false)).slice(); pr.targets = degrees.map(d => store.startMidi + d); pr.idx = 0; pr.results = []; }
 /* 音ごとの長さ（単位=1音ぶんの秒）。offs=各音の開始位置（単位）・total=全体（単位） */
 function lensOf() { return pr.lens && pr.lens.length === pr.targets.length ? pr.lens : pr.targets.map(() => 1); }
 function lenOffsets(lens) { const offs = []; let a = 0; lens.forEach(l => { offs.push(a); a += l; }); return { offs, total: a }; }
@@ -600,7 +604,7 @@ function renderC() {
   const big = document.getElementById('pc-target'); big.textContent = name; const abs = document.createElement('span'); abs.className = 'abs'; abs.textContent = noteEN(m); big.appendChild(abs);
   document.getElementById('pc-title').textContent = pr.targets.length === 1 ? `「${name}」と同じ高さで「あー」` : `「${pr.degrees.map(degJP).join('')}」と、つづけて歌います`;
   document.getElementById('pc-prog').style.width = (seqMode() ? 0 : pr.idx / pr.targets.length * 100) + '%';
-  const n = document.getElementById('pc-notes'); n.innerHTML = ''; pr.degrees.forEach((dd, i) => { const s = document.createElement('span'); s.textContent = degJP(dd); if (pr.rests && pr.rests[i] > 0) s.dataset.rest = '1'; s.className = (seqMode() ? '' : i < pr.idx ? 'done' : i === pr.idx ? 'cur' : '') + (degJP(dd).length > 1 ? ' two' : ''); n.appendChild(s); });
+  const n = document.getElementById('pc-notes'); n.innerHTML = ''; pr.degrees.forEach((dd, i) => { const s = document.createElement('span'); s.textContent = degJP(dd); if (pr.rests && pr.rests[i] > 0) s.dataset.rest = '1'; if (pr.bars && pr.bars[i]) s.dataset.bar = '1'; /* 9/24 みかさん「楽譜を基準に」→ 音の長さを丸の幅で見せる（八分＝小さい丸・二分＝横長）。音が多いフレーズは全体を小さく */ { const L = (pr.lens && pr.lens[i]) ? pr.lens[i] - ((pr.rests && pr.rests[i]) || 0) : 1; const base = 34; s.style.height = base + 'px'; s.style.width = Math.round(base * (L >= 1 ? Math.min(L, 1.5) : 0.76)) + 'px'; s.style.fontSize = degJP(dd).length > 1 ? '11px' : '15px'; s.style.borderRadius = base + 'px'; } s.className = (seqMode() ? '' : i < pr.idx ? 'done' : i === pr.idx ? 'cur' : '') + (degJP(dd).length > 1 ? ' two' : ''); n.appendChild(s); if (pr.bars && pr.bars[i] && pr.degrees.length > 7) { const br = document.createElement('div'); br.style.flexBasis = '100%'; br.style.height = '0'; n.appendChild(br); } });
   tr.noteT0 = performance.now(); tr.first = []; tr.voicedT = 0;
 }
 
