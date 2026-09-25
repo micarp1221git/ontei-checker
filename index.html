@@ -722,9 +722,9 @@ function drawSlide(nowT, cur) {
   ctx.fillStyle = 'rgba(73,186,206,.22)'; ctx.fillRect(0, Math.min(yG, y7), w, Math.abs(y7 - yG));   // 3〜7半音の帯
   ctx.strokeStyle = '#49BACE'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(0, yG); ctx.lineTo(w, yG); ctx.stroke();
   ctx.strokeStyle = '#7D7270'; ctx.lineWidth = 2; ctx.setLineDash([6, 6]); ctx.beginPath(); ctx.moveTo(0, yS); ctx.lineTo(w, yS); ctx.stroke(); ctx.setLineDash([]);
-  ctx.font = 'bold 15px ' + font; ctx.textAlign = 'right';   // 左上・左下には「高い」「低い」の札があるので、右に寄せる
-  ctx.fillStyle = '#49BACE'; ctx.fillText('ここまで（3半音）', w - 12, yG + (dir > 0 ? -8 : 20));
-  ctx.fillStyle = '#7D7270'; ctx.fillText(sl.startM === null ? 'はじめ（出しやすい高さ）' : 'はじめ', w - 12, yS + (dir > 0 ? 20 : -8));
+  ctx.font = 'bold 15px ' + font; ctx.textAlign = 'left';   // 札は線の内側（はじめと目標の間）に置く。外側だと「高い」「低い」の札と重なり、右端だと玉と重なる
+  ctx.fillStyle = '#49BACE'; ctx.fillText('ここまで（3半音）', 12, yG + (dir > 0 ? 20 : -8));
+  ctx.fillStyle = '#7D7270'; ctx.fillText(sl.startM === null ? 'はじめ（出しやすい高さ）' : 'はじめ', 12, yS + (dir > 0 ? -8 : 20));
   const x0 = w * LEAD, pxPerMs = x0 / TRACE_MS; ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; let prev = null;
   for (const s of tr.samples) { if (s.c === null) { prev = null; continue; } const x = x0 - (nowT - s.t) * pxPerMs; if (x < 0) { prev = null; continue; } const y = yOf(s.c * dir); if (prev) { ctx.strokeStyle = s.c >= 300 ? '#3DA877' : '#E8815B'; ctx.beginPath(); ctx.moveTo(prev.x, prev.y); ctx.lineTo(x, y); ctx.stroke(); } prev = { x, y }; }
   if (cur === null) { ctx.fillStyle = '#E9DDD7'; ctx.beginPath(); ctx.arc(x0, yS, 15, 0, Math.PI * 2); ctx.fill(); return; }
